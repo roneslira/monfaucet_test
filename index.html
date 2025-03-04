@@ -399,16 +399,20 @@
                     try {
                         await window.ethereum.request({
                             method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x27AF' }]
+                            params: [{ chainId: '0x27AF' }],
                         });
                     } catch (switchError) {
                         if (switchError.code === 4902) {
                             await window.ethereum.request({
                                 method: 'wallet_addEthereumChain',
-                                params: [MONAD_TESTNET]
+                                params: [MONAD_TESTNET],
+                            });
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: '0x27AF' }],
                             });
                         } else {
-                            throw switchError;
+                            throw new Error('Failed to switch to Monad Testnet. Please switch manually.');
                         }
                     }
                 }
@@ -482,7 +486,7 @@
                 const cachedClaim = ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
                 const cachedCooldown = (await contract.COOLDOWN_PERIOD()).toString();
                 localStorage.setItem('claimAmount', '0.01'); // Fixado em 0.01 para testes
-                localStorage.setItem('cooldownPeriod', '60'); // Fixado em 60s para testes
+                localStorage.setItem('cooldownPeriod', cachedCooldown);
                 available.textContent = ethers.utils.formatEther(balance) + ' MON';
                 claimAmount.textContent = '0.01 MON';
             } catch (error) {
@@ -506,7 +510,7 @@
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                 const address = await signer.getAddress();
                 const lastClaimTime = await contract.lastClaim(address);
-                const cooldown = parseInt(localStorage.getItem('cooldownPeriod') || '60');
+                const cooldown = parseInt(await contract.COOLDOWN_PERIOD()); // Usar valor real do contrato
                 const now = Math.floor(Date.now() / 1000);
 
                 if (lastClaimTime.toNumber() > 0) {
@@ -517,15 +521,14 @@
                     startCooldownCountdown(lastClaimTime, cooldown);
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = 'Tasks completed. Waiting for cooldown.';
+                    status.textContent = `Cooldown active. Wait until ${new Date((lastClaimTime.toNumber() + cooldown) * 1000).toLocaleString()} to claim again.`;
                 } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
                     claimButtonText.textContent = 'Claim Tokens';
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
                     status.textContent = 'Complete all tasks to claim tokens.';
                 } else {
-                    const claimAmt = localStorage.getItem('claimAmount') || '0.01';
-                    claimButtonText.textContent = `Claim ${claimAmt} MON`;
+                    claimButtonText.textContent = 'Claim 0.01 MON';
                     claimButton.disabled = false;
                     claimButton.classList.add('enabled');
                     status.textContent = 'Ready to claim!';
@@ -569,7 +572,7 @@
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                const tx = await contract.claim();
+                const tx = await contract.claim({ gasLimit: 100000 }); // Gas limit manual para evitar UNPREDICTABLE_GAS_LIMIT
                 await tx.wait();
                 alert('Tokens claimed successfully!');
                 tasksCompleted.followX = false;
@@ -579,11 +582,17 @@
                 checkClaimStatus();
             } catch (error) {
                 console.error('Claim error:', error);
-                alert('Failed to claim tokens: ' + (error.message || 'Unknown error'));
+                if (error.reason && error.reason.includes('Aguarde 24 horas')) {
+                    status.textContent = 'Cooldown active. Please wait 24 hours for the next claim.';
+                } else {
+                    alert('Failed to claim tokens: ' + (error.message || 'Unknown error'));
+                    status.textContent = 'Error during claim. Try again.';
+                }
                 claimButtonText.textContent = 'Claim Tokens';
-                status.textContent = 'Error during claim. Try again.';
             } finally {
                 claimButton.classList.remove('loading');
+                claimButton.disabled = false;
+                checkClaimStatus();
             }
         }
 
