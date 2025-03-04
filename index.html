@@ -194,13 +194,15 @@
             <button class="modal-button" id="confirm-no">No</button>
         </div>
     </div>
-    <!-- Carregar ethers.js sem defer para garantir disponibilidade -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <!-- Usando CDN confiável para ethers.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script>
-        // Verificar se ethers carregou antes de prosseguir
+        // Verificar se ethers carregou
         if (typeof ethers === 'undefined') {
-            document.getElementById('status').textContent = 'Error: ethers.js not loaded. Please refresh the page.';
+            document.getElementById('status').textContent = 'Error: ethers.js failed to load. Please check your internet or refresh the page.';
             throw new Error('ethers.js not loaded');
+        } else {
+            console.log('ethers.js loaded successfully');
         }
 
         const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
