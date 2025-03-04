@@ -278,14 +278,14 @@
                     </div>
                     <i class="fas fa-arrow-right arrow"></i>
                 </button>
-                <button class="task-button" data-task="followX">
+                <button class="task-button" data-task="followX" disabled>
                     <div class="flex items-center gap-3">
                         <i class="fab fa-twitter icon"></i>
                         <span>Seguir no X</span>
                     </div>
                     <i class="fas fa-arrow-right arrow"></i>
                 </button>
-                <button class="task-button" data-task="likePost">
+                <button class="task-button" data-task="likePost" disabled>
                     <div class="flex items-center gap-3">
                         <i class="fas fa-thumbs-up icon"></i>
                         <span>Curtir Post no X</span>
@@ -306,7 +306,7 @@
                 </div>
             </div>
             <button class="claim-button" id="claimButton" disabled>Reclamar Tokens</button>
-            <div class="status" id="status">Conecte sua carteira para reclamar tokens.</div>
+            <div class="status" id="status">Conecte sua carteira para começar.</div>
         </div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
@@ -407,7 +407,11 @@
                 };
 
                 let walletConnected = false;
-                let tasksCompleted = 0;
+                let tasksCompleted = {
+                    connectWallet: false,
+                    followX: false,
+                    likePost: false
+                };
                 const taskButtons = document.getElementById('taskButtons').querySelectorAll('.task-button');
                 const claimButton = document.getElementById('claimButton');
                 const status = document.getElementById('status');
@@ -461,14 +465,24 @@
                 }
 
                 function completeTask(task) {
-                    const button = Array.from(taskButtons).find(btn => btn.getAttribute('data-task') === task);
-                    if (button) {
-                        button.disabled = true;
-                        button.style.opacity = '0.5';
-                        button.style.animation = 'fadeOut 0.5s ease-out';
-                        tasksCompleted++;
-                        checkClaimStatus();
-                    }
+                    tasksCompleted[task] = true;
+                    updateTaskButtons();
+                    checkClaimStatus();
+                }
+
+                function updateTaskButtons() {
+                    taskButtons.forEach(button => {
+                        const task = button.getAttribute('data-task');
+                        if (task) {
+                            const isCompleted = tasksCompleted[task];
+                            button.disabled = !walletConnected || isCompleted;
+                            button.style.opacity = isCompleted ? '0.5' : '1';
+                            if (isCompleted) button.style.animation = 'fadeOut 0.5s ease-out';
+                            else button.style.animation = 'fadeIn 0.5s ease-in';
+                        }
+                    });
+                    connectWalletButton.disabled = walletConnected;
+                    connectWalletButton.style.opacity = walletConnected ? '0.5' : '1';
                 }
 
                 @keyframes fadeOut {
@@ -495,8 +509,8 @@
                             const address = await signer.getAddress();
                             walletAddress.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
                             walletInfo.style.display = 'flex';
-                            connectWalletButton.disabled = true;
-                            connectWalletButton.style.opacity = '0.5';
+                            tasksCompleted.connectWallet = true;
+                            updateTaskButtons();
                             checkClaimStatus();
                             status.textContent = 'Carteira conectada! Complete as tarefas para reclamar.';
                         } catch (error) {
@@ -514,20 +528,18 @@
 
                 disconnectWallet.addEventListener('click', () => {
                     walletConnected = false;
+                    tasksCompleted = {
+                        connectWallet: false,
+                        followX: false,
+                        likePost: false
+                    };
                     walletInfo.style.display = 'none';
                     connectWalletButton.disabled = false;
                     connectWalletButton.style.opacity = '1';
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = 'Conecte sua carteira para reclamar tokens.';
-                    tasksCompleted = 0;
-                    taskButtons.forEach(btn => {
-                        if (btn.getAttribute('data-task')) {
-                            btn.disabled = false;
-                            btn.style.opacity = '1';
-                            btn.style.animation = 'fadeIn 0.5s ease-in';
-                        }
-                    });
+                    status.textContent = 'Conecte sua carteira para começar.';
+                    updateTaskButtons();
                 });
 
                 taskButtons.forEach(button => {
@@ -535,9 +547,11 @@
                         button.addEventListener('click', () => {
                             const task = button.getAttribute('data-task');
                             const link = socialLinks[task];
-                            if (link) {
+                            if (link && walletConnected && !tasksCompleted[task]) {
                                 window.open(link, '_blank');
                                 showModal(task);
+                            } else if (!walletConnected) {
+                                alert('Conecte sua carteira primeiro.');
                             }
                         });
                     }
@@ -547,7 +561,7 @@
                     if (!walletConnected) {
                         claimButton.disabled = true;
                         claimButton.classList.remove('enabled');
-                        status.textContent = 'Conecte sua carteira para reclamar tokens.';
+                        status.textContent = 'Conecte sua carteira para começar.';
                         available.textContent = '0.00 MON';
                         return;
                     }
@@ -560,7 +574,7 @@
                         const address = await signer.getAddress();
                         const lastClaimTime = await contract.lastClaim(address);
                         const now = Math.floor(Date.now() / 1000);
-                        const cooldown = 24 * 60 * 60;
+                        const cooldown = 24 * 60 * 60; // 24 horas em segundos
 
                         if (now < lastClaimTime.toNumber() + cooldown) {
                             const remaining = lastClaimTime.toNumber() + cooldown - now;
@@ -569,10 +583,10 @@
                             claimButton.disabled = true;
                             claimButton.classList.remove('enabled');
                             status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
-                        } else if (tasksCompleted < 2) {
+                        } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
                             claimButton.disabled = true;
                             claimButton.classList.remove('enabled');
-                            status.textContent = `Complete todas as 2 tarefas para reclamar tokens.`;
+                            status.textContent = `Complete todas as tarefas (Seguir no X e Curtir Post no X) para reclamar tokens.`;
                         } else {
                             claimButton.disabled = false;
                             claimButton.classList.add('enabled');
@@ -591,8 +605,8 @@
                 }
 
                 async function claimTokens() {
-                    if (!walletConnected || tasksCompleted < 2) {
-                        alert('Conecte sua carteira e complete todas as tarefas primeiro.');
+                    if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost) {
+                        alert('Conecte sua carteira e complete todas as tarefas (Seguir no X e Curtir Post no X) primeiro.');
                         return;
                     }
 
@@ -605,14 +619,12 @@
                         const tx = await contract.claim();
                         const receipt = await tx.wait();
                         alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
-                        tasksCompleted = 0;
-                        taskButtons.forEach(btn => {
-                            if (btn.getAttribute('data-task')) {
-                                btn.disabled = false;
-                                btn.style.opacity = '1';
-                                btn.style.animation = 'fadeIn 0.5s ease-in';
-                            }
-                        });
+                        tasksCompleted = {
+                            connectWallet: true,
+                            followX: false,
+                            likePost: false
+                        };
+                        updateTaskButtons();
                         checkClaimStatus();
                     } catch (error) {
                         console.error('Erro ao reclamar tokens:', error);
