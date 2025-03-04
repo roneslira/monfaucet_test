@@ -43,25 +43,6 @@
             padding: 0 20px;
         }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-        .banner {
-            position: absolute;
-            z-index: 15; /* Acima da faucet (z-index: 10), abaixo de modais */
-            border: 2px dashed var(--box-border);
-            padding: 5px;
-            background: var(--box-background);
-            box-shadow: 0 4px 12px var(--shadow-color);
-            transition: all 0.3s ease-in-out;
-        }
-        .banner::after {
-            content: 'Banner';
-            position: absolute;
-            top: 50%;
-            left: 100%;
-            transform: translate(-50%, -50%);
-            font-size: 0.7rem;
-            color: var(--text-color);
-            opacity: 0.7;
-        }
         .wallet-info {
             position: relative;
             z-index: 20;
@@ -270,42 +251,18 @@
         }
         footer a:hover { color: var(--secondary-color); }
 
-        /* Responsividade com Banners no Topo e Base em Mobile */
+        /* Responsividade em Mobile */
         @media (max-width: 768px) {
-            .banner {
-                position: absolute;
-                width: 100%;
-                height: auto;
-                max-width: 420px;
-                height: 90px;
-                top: auto;
-                left: 50%;
-                transform: translateX(-50%);
-            }
-            .banner-left { top: 10px; }
-            .banner-right { bottom: 10px; top: auto; }
             .faucet-container { max-width: 90%; margin-top: 1rem; padding: 1rem; }
             .faucet-title { font-size: 2rem; }
             .task-button, .claim-button { padding: 0.8rem; }
             .wallet-info { max-width: 90%; }
-        }
-
-        /* Desktop-specific styles */
-        @media (min-width: 769px) {
-            .banner {
-                width: 90px; /* Vertical em desktop */
-                height: 720px; /* Altura ajustada para vertical */
-            }
-            .banner-left { left: calc(50% - 12rem - 100px); top: calc(50% - 360px); } /* Afastado para o lado esquerdo da faucet */
-            .banner-right { right: calc(50% - 12rem - 100px); top: calc(50% - 360px); } /* Afastado para o lado direito da faucet */
         }
     </style>
 </head>
 <body>
     <div class="main-content">
         <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
-        <img src="https://example.com/banner-left.jpg" alt="Banner Esquerdo" class="banner banner-left">
-        <img src="https://example.com/banner-right.jpg" alt="Banner Direito" class="banner banner-right">
         <div class="wallet-info" id="walletInfo">
             <span id="walletAddress"></span>
             <button id="disconnectWallet">Desconectar</button>
@@ -437,8 +394,8 @@
                 ];
 
                 const socialLinks = {
-                    "followX": "https://x.com/_roneslira?follow=true", // Link para seguir no X
-                    "likePost": "https://x.com/_roneslira/status/123456789" // Link fictício para curtir (para testes)
+                    "followX": "https://x.com/_roneslira?follow=true",
+                    "likePost": "https://x.com/_roneslira/status/123456789"
                 };
 
                 let walletConnected = false;
