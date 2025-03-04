@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MonFaucet</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet"> <!-- Ícones Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" defer> <!-- Ícones Font Awesome com defer -->
     <style>
         /* Bloco Editável: Configurações Gerais */
         :root {
             --background-start: #000000;
-            --background-end: #1A1A1A;
-            --primary-color: #007AFF; /* Azul principal do site da Monad */
-            --secondary-color: #00D4FF; /* Ciano claro do site da Monad */
-            --accent-color: #FF6F00; /* Laranja como acento opcional */
+            --background-end: #0F1419;
+            --primary-color: #007AFF;
+            --secondary-color: #00D4FF;
+            --accent-color: #FF6F00;
             --text-color: #FFFFFF;
             --box-background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.07));
             --box-border: rgba(255, 255, 255, 0.1);
@@ -29,15 +29,11 @@
             --status-text: "Conecte sua carteira para reclamar tokens.";
             --contract-address: "https://testnet.monadexplorer.com/address/0x1EB75153aF33AD33841565D2E11478787D863123";
             --contract-address-short: "0x1EB75153...D863123";
-            --social-links: {
-                "followX": "https://twitter.com/MonFaucet",
-                "likePost": "https://twitter.com/MonFaucet/status/123456789",
-                "joinTelegram": "https://t.me/MonFaucetGroup"
-            };
+            --social-links: '{"followX": "https://twitter.com/MonFaucet", "likePost": "https://twitter.com/MonFaucet/status/123456789", "joinTelegram": "https://t.me/MonFaucetGroup"}';
             --banner-left-url: "https://example.com/banner-left.jpg";
             --banner-right-url: "https://example.com/banner-right.jpg";
             --banner-width: 200px;
-            --banner-height: auto;
+            --banner-height: 300px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -58,12 +54,11 @@
             align-items: center;
             position: relative;
             z-index: 2;
+            padding: 0 20px;
         }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         .banner {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
+            position: absolute;
             width: var(--banner-width);
             height: var(--banner-height);
             z-index: 10;
@@ -71,11 +66,12 @@
             padding: 5px;
             background: var(--box-background);
             box-shadow: 0 4px 12px var(--shadow-color);
+            transition: all 0.3s ease-in-out;
         }
-        .banner-left { left: 20px; }
-        .banner-right { right: 20px; }
+        .banner-left { left: calc(50% - 320px); top: calc(50% - 150px); }
+        .banner-right { right: calc(50% - 320px); top: calc(50% + 150px); }
         .banner::after {
-            content: 'Banner 200px x Auto';
+            content: 'Banner 200px x 300px';
             position: absolute;
             top: 100%;
             left: 50%;
@@ -263,9 +259,19 @@
         }
         footer a:hover { color: var(--secondary-color); }
 
-        /* Responsividade */
+        /* Responsividade com Banners no Topo e Base em Mobile */
         @media (max-width: 768px) {
-            .banner { display: none; }
+            .banner {
+                position: absolute;
+                width: 100%;
+                height: auto;
+                max-width: var(--banner-width);
+                top: auto;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            .banner-left { top: 20px; }
+            .banner-right { bottom: 20px; top: auto; }
             .faucet-container { max-width: 90%; margin-top: 2rem; padding: 1.5rem; }
             .faucet-title { font-size: 2.5rem; }
             .task-button, .claim-button { padding: 1rem; }
@@ -281,7 +287,7 @@
             <div class="faucet-title">[Título será preenchido via JS]</div>
             <p>[Descrição será preenchido via JS]</p>
             <div class="task-buttons" id="taskButtons">
-                <button class="task-button" id="connectWalletButton">
+                <button class="task-button" id="connectWalletButton" title="Conecte sua carteira MetaMask para continuar">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-wallet icon"></i>
                         <span>Conectar Carteira</span>
@@ -340,303 +346,335 @@
             <button class="modal-button" id="confirm-no">Não</button>
         </div>
     </div>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" integrity="sha384-..." crossorigin="anonymous"></script> <!-- Versão UMD do ethers.js -->
-    <script>
-        // Função para obter valores das variáveis CSS
-        function getCSSVariable(name) {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '';
-        }
-
-        // Aplicar valores das variáveis CSS nos elementos HTML
-        document.querySelector('.faucet-title').textContent = getCSSVariable('--title');
-        document.querySelector('p').textContent = getCSSVariable('--description');
-        document.querySelector('#infoBox div:nth-child(1) span:first-child').textContent = getCSSVariable('--available-text');
-        document.querySelector('#infoBox div:nth-child(2) span:first-child').textContent = getCSSVariable('--network-text');
-        document.querySelector('#infoBox div:nth-child(3) span:first-child').textContent = getCSSVariable('--contract-text');
-        document.querySelector('#infoBox div:nth-child(3) a').href = getCSSVariable('--contract-address');
-        document.querySelector('#infoBox div:nth-child(3) a').textContent = getCSSVariable('--contract-address-short');
-        document.getElementById('claimButton').textContent = getCSSVariable('--claim-text');
-        document.getElementById('status').textContent = getCSSVariable('--status-text');
-
-        const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123'; // Endereço do contrato atualizado
-        const ABI = [
-            {
-                "inputs": [],
-                "name": "claim",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "getBalance",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "inputs": [{"name": "", "type": "address"}],
-                "name": "lastClaim",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "stateMutability": "view",
-                "type": "function"
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" integrity="sha384-..." crossorigin="anonymous" defer></script> <!-- Versão UMD com defer -->
+    <script defer>
+        // Esperar o DOM e todos os recursos estarem carregados
+        window.onload = function() {
+            // Função para obter valores das variáveis CSS com fallback
+            function getCSSVariable(name) {
+                const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '';
+                console.log(`Valor de ${name}: ${value}`); // Depuração
+                return value;
             }
-        ];
 
-        const socialLinks = JSON.parse(getCSSVariable('--social-links').replace(/'/g, '"'));
+            // Aplicar valores das variáveis CSS nos elementos HTML com tratamento de erro
+            try {
+                document.querySelector('.faucet-title').textContent = getCSSVariable('--title') || 'MonFaucet';
+                document.querySelector('p').textContent = getCSSVariable('--description') || 'Reclame tokens MON da Monad Testnet';
+                document.querySelector('#infoBox div:nth-child(1) span:first-child').textContent = getCSSVariable('--available-text') || 'Disponível';
+                document.querySelector('#infoBox div:nth-child(2) span:first-child').textContent = getCSSVariable('--network-text') || 'Rede';
+                document.querySelector('#infoBox div:nth-child(3) span:first-child').textContent = getCSSVariable('--contract-text') || 'Contrato';
+                document.querySelector('#infoBox div:nth-child(3) a').href = getCSSVariable('--contract-address') || 'https://testnet.monadexplorer.com/address/0x1EB75153aF33AD33841565D2E11478787D863123';
+                document.querySelector('#infoBox div:nth-child(3) a').textContent = getCSSVariable('--contract-address-short') || '0x1EB75153...D863123';
+                document.getElementById('claimButton').textContent = getCSSVariable('--claim-text') || 'Reclamar Tokens';
+                document.getElementById('status').textContent = getCSSVariable('--status-text') || 'Conecte sua carteira para reclamar tokens.';
 
-        let walletConnected = false;
-        let tasksCompleted = 0;
-        const taskButtons = document.getElementById('taskButtons').querySelectorAll('.task-button');
-        const claimButton = document.getElementById('claimButton');
-        const status = document.getElementById('status');
-        const connectWalletButton = document.getElementById('connectWalletButton');
-        const modal = document.getElementById('confirmation-modal');
-        const modalOverlay = document.getElementById('modal-overlay');
-
-        // Função de carregamento (spinner)
-        function showLoading(target) {
-            const spinner = document.createElement('div');
-            spinner.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                border: 4px solid var(--box-border);
-                border-top: 4px solid var(--primary-color);
-                border-radius: 50%;
-                width: 20px;
-                height: 20px;
-                animation: spin 1s linear infinite;
-            `;
-            @keyframes spin {
-                0% { transform: translate(-50%, -50%) rotate(0deg); }
-                100% { transform: translate(-50%, -50%) rotate(360deg); }
+                // Verificar se ethers.js foi carregado corretamente
+                if (typeof ethers === 'undefined') {
+                    console.error('Ethers.js não foi carregado corretamente. Tentando fallback.');
+                    const ethersScript = document.createElement('script');
+                    ethersScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js';
+                    ethersScript.async = true;
+                    ethersScript.onload = () => {
+                        console.log('Ethers.js carregado via fallback.');
+                        initializeApp();
+                    };
+                    ethersScript.onerror = () => {
+                        console.error('Falha no fallback do ethers.js. Verifique sua conexão.');
+                        alert('Erro: Biblioteca ethers.js não carregada. Tente recarregar a página ou verifique sua conexão.');
+                    };
+                    document.head.appendChild(ethersScript);
+                } else {
+                    initializeApp();
+                }
+            } catch (error) {
+                console.error('Erro ao preencher textos:', error);
+                alert('Erro ao carregar o conteúdo. Recarregue a página.');
             }
-            target.appendChild(spinner);
-            return spinner;
-        }
 
-        function hideLoading(spinner) {
-            if (spinner) spinner.remove();
-        }
+            function initializeApp() {
+                const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
+                const ABI = [
+                    {
+                        "inputs": [],
+                        "name": "claim",
+                        "outputs": [],
+                        "stateMutability": "nonpayable",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [],
+                        "name": "getBalance",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    },
+                    {
+                        "inputs": [{"name": "", "type": "address"}],
+                        "name": "lastClaim",
+                        "outputs": [{"name": "", "type": "uint256"}],
+                        "stateMutability": "view",
+                        "type": "function"
+                    }
+                ];
 
-        function showModal(task) {
-            modal.style.display = 'block';
-            modalOverlay.style.display = 'block';
-            document.getElementById('confirm-yes').onclick = () => {
-                completeTask(task);
-                modal.style.display = 'none';
-                modalOverlay.style.display = 'none';
-            };
-            document.getElementById('confirm-no').onclick = () => {
-                modal.style.display = 'none';
-                modalOverlay.style.display = 'none';
-            };
-        }
+                const socialLinks = JSON.parse(getCSSVariable('--social-links') || '{"followX": "https://twitter.com/MonFaucet", "likePost": "https://twitter.com/MonFaucet/status/123456789", "joinTelegram": "https://t.me/MonFaucetGroup"}');
 
-        function completeTask(task) {
-            const button = Array.from(taskButtons).find(btn => btn.getAttribute('data-task') === task);
-            if (button) {
-                button.disabled = true;
-                button.style.opacity = '0.5';
-                button.style.animation = 'fadeOut 0.5s ease-out';
-                tasksCompleted++;
-                checkClaimStatus();
-            }
-        }
+                let walletConnected = false;
+                let tasksCompleted = 0;
+                const taskButtons = document.getElementById('taskButtons').querySelectorAll('.task-button');
+                const claimButton = document.getElementById('claimButton');
+                const status = document.getElementById('status');
+                const connectWalletButton = document.getElementById('connectWalletButton');
+                const modal = document.getElementById('confirmation-modal');
+                const modalOverlay = document.getElementById('modal-overlay');
 
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0.5; }
-        }
+                // Função de carregamento (spinner)
+                function showLoading(target) {
+                    const spinner = document.createElement('div');
+                    spinner.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        border: 4px solid var(--box-border);
+                        border-top: 4px solid var(--primary-color);
+                        border-radius: 50%;
+                        width: 20px;
+                        height: 20px;
+                        animation: spin 1s linear infinite;
+                    `;
+                    @keyframes spin {
+                        0% { transform: translate(-50%, -50%) rotate(0deg); }
+                        100% { transform: translate(-50%, -50%) rotate(360deg); }
+                    }
+                    target.appendChild(spinner);
+                    return spinner;
+                }
 
-        async function connectWallet() {
-            if (window.ethereum) {
-                const spinner = showLoading(connectWalletButton);
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    const network = await provider.getNetwork();
-                    if (network.chainId !== 10143) { // Monad Testnet Chain ID
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x27AF' }]
+                function hideLoading(spinner) {
+                    if (spinner) spinner.remove();
+                }
+
+                function showModal(task) {
+                    modal.style.display = 'block';
+                    modalOverlay.style.display = 'block';
+                    document.getElementById('confirm-yes').onclick = () => {
+                        completeTask(task);
+                        modal.style.display = 'none';
+                        modalOverlay.style.display = 'none';
+                    };
+                    document.getElementById('confirm-no').onclick = () => {
+                        modal.style.display = 'none';
+                        modalOverlay.style.display = 'none';
+                    };
+                }
+
+                function completeTask(task) {
+                    const button = Array.from(taskButtons).find(btn => btn.getAttribute('data-task') === task);
+                    if (button) {
+                        button.disabled = true;
+                        button.style.opacity = '0.5';
+                        button.style.animation = 'fadeOut 0.5s ease-out';
+                        tasksCompleted++;
+                        checkClaimStatus();
+                    }
+                }
+
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0.5; }
+                }
+
+                async function connectWallet() {
+                    if (window.ethereum) {
+                        const spinner = showLoading(connectWalletButton);
+                        try {
+                            await new Promise(resolve => setTimeout(resolve, 500)); // Espera para garantir MetaMask está pronto
+                            const provider = new ethers.providers.Web3Provider(window.ethereum);
+                            await provider.send("eth_requestAccounts", []);
+                            const network = await provider.getNetwork();
+                            if (network.chainId !== 10143) { // Monad Testnet Chain ID
+                                await window.ethereum.request({
+                                    method: 'wallet_switchEthereumChain',
+                                    params: [{ chainId: '0x27AF' }]
+                                });
+                            }
+                            walletConnected = true;
+                            connectWalletButton.disabled = true;
+                            connectWalletButton.style.opacity = '0.5';
+                            checkClaimStatus();
+                            alert('Carteira conectada com sucesso na Monad Testnet!');
+                        } catch (error) {
+                            alert('Erro ao conectar carteira: ' + error.message);
+                        } finally {
+                            hideLoading(spinner);
+                        }
+                    } else {
+                        alert('Instale MetaMask ou uma carteira EVM compatível.');
+                    }
+                }
+
+                connectWalletButton.addEventListener('click', connectWallet);
+
+                taskButtons.forEach(button => {
+                    if (button.getAttribute('data-task')) {
+                        button.addEventListener('click', () => {
+                            const task = button.getAttribute('data-task');
+                            const link = socialLinks[task];
+                            if (link) {
+                                window.open(link, '_blank');
+                                showModal(task);
+                            }
                         });
                     }
-                    walletConnected = true;
-                    connectWalletButton.disabled = true;
-                    connectWalletButton.style.opacity = '0.5';
-                    checkClaimStatus();
-                    alert('Carteira conectada com sucesso na Monad Testnet!');
-                } catch (error) {
-                    alert('Erro ao conectar carteira: ' + error.message);
-                } finally {
-                    hideLoading(spinner);
+                });
+
+                async function checkClaimStatus() {
+                    if (!walletConnected) {
+                        claimButton.disabled = true;
+                        claimButton.classList.remove('enabled');
+                        status.textContent = getCSSVariable('--status-text');
+                        return;
+                    }
+
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const signer = provider.getSigner();
+                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                    const address = await signer.getAddress();
+                    const lastClaimTime = await contract.lastClaim(address);
+                    const now = Math.floor(Date.now() / 1000); // Timestamp em segundos
+                    const cooldown = 24 * 60 * 60; // 24 horas em segundos
+
+                    if (now < lastClaimTime.toNumber() + cooldown) {
+                        const remaining = lastClaimTime.toNumber() + cooldown - now;
+                        const hours = Math.floor(remaining / 3600);
+                        const minutes = Math.floor((remaining % 3600) / 60);
+                        claimButton.disabled = true;
+                        claimButton.classList.remove('enabled');
+                        status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
+                    } else if (tasksCompleted < 3) { // Agora são 3 tarefas (sem "Conecte sua carteira" como tarefa)
+                        claimButton.disabled = true;
+                        claimButton.classList.remove('enabled');
+                        status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
+                    } else {
+                        claimButton.disabled = false;
+                        claimButton.classList.add('enabled');
+                        status.textContent = getCSSVariable('--claim-text');
+                    }
+
+                    const balance = await contract.getBalance();
+                    document.getElementById('available').textContent = ethers.utils.formatEther(balance) + ' MON';
                 }
-            } else {
-                alert('Instale MetaMask ou uma carteira EVM compatível.');
-            }
-        }
 
-        connectWalletButton.addEventListener('click', connectWallet);
-
-        taskButtons.forEach(button => {
-            if (button.getAttribute('data-task')) {
-                button.addEventListener('click', () => {
-                    const task = button.getAttribute('data-task');
-                    const link = socialLinks[task];
-                    if (link) {
-                        window.open(link, '_blank');
-                        showModal(task);
+                async function claimTokens() {
+                    if (!walletConnected || tasksCompleted < 3) {
+                        alert('Conecte sua carteira e complete todas as tarefas primeiro.');
+                        return;
                     }
-                });
-            }
-        });
 
-        async function checkClaimStatus() {
-            if (!walletConnected) {
-                claimButton.disabled = true;
-                claimButton.classList.remove('enabled');
-                status.textContent = getCSSVariable('--status-text');
-                return;
-            }
+                    const spinner = showLoading(claimButton);
+                    try {
+                        const provider = new ethers.providers.Web3Provider(window.ethereum);
+                        const signer = provider.getSigner();
+                        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
-            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-            const address = await signer.getAddress();
-            const lastClaimTime = await contract.lastClaim(address);
-            const now = Math.floor(Date.now() / 1000); // Timestamp em segundos
-            const cooldown = 24 * 60 * 60; // 24 horas em segundos
-
-            if (now < lastClaimTime.toNumber() + cooldown) {
-                const remaining = lastClaimTime.toNumber() + cooldown - now;
-                const hours = Math.floor(remaining / 3600);
-                const minutes = Math.floor((remaining % 3600) / 60);
-                claimButton.disabled = true;
-                claimButton.classList.remove('enabled');
-                status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
-            } else if (tasksCompleted < 3) { // Agora são 3 tarefas (sem "Conecte sua carteira" como tarefa)
-                claimButton.disabled = true;
-                claimButton.classList.remove('enabled');
-                status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
-            } else {
-                claimButton.disabled = false;
-                claimButton.classList.add('enabled');
-                status.textContent = getCSSVariable('--claim-text');
-            }
-
-            const balance = await contract.getBalance();
-            document.getElementById('available').textContent = ethers.utils.formatEther(balance) + ' MON';
-        }
-
-        async function claimTokens() {
-            if (!walletConnected || tasksCompleted < 3) {
-                alert('Conecte sua carteira e complete todas as tarefas primeiro.');
-                return;
-            }
-
-            const spinner = showLoading(claimButton);
-            try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-
-                const tx = await contract.claim();
-                await tx.wait();
-                alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
-                tasksCompleted = 0; // Resetar tarefas após claim
-                taskButtons.forEach(btn => {
-                    if (btn.getAttribute('data-task')) {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.animation = 'fadeIn 0.5s ease-in';
+                        const tx = await contract.claim();
+                        await tx.wait();
+                        alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
+                        tasksCompleted = 0; // Resetar tarefas após claim
+                        taskButtons.forEach(btn => {
+                            if (btn.getAttribute('data-task')) {
+                                btn.disabled = false;
+                                btn.style.opacity = '1';
+                                btn.style.animation = 'fadeIn 0.5s ease-in';
+                            }
+                        });
+                        checkClaimStatus();
+                    } catch (error) {
+                        alert('Erro ao reclamar tokens: ' + error.message);
+                    } finally {
+                        hideLoading(spinner);
                     }
+                }
+
+                claimButton.addEventListener('click', claimTokens);
+
+                // Verificar status ao carregar e periodicamente
+                window.addEventListener('load', checkClaimStatus);
+                setInterval(checkClaimStatus, 30000); // Verifica a cada 30 segundos
+
+                // Animação otimizada do canvas com menos partículas
+                const canvas = document.querySelector('canvas');
+                const ctx = canvas.getContext('2d');
+
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * canvas.width;
+                        this.y = Math.random() * canvas.height;
+                        this.size = Math.random() * 2 + 0.5;
+                        this.speedX = Math.random() * 0.3 - 0.15;
+                        this.speedY = Math.random() * 0.3 - 0.15;
+                        this.color = `rgba(${Math.random() * 100 + 155}, ${Math.random() * 100 + 155}, 255, 0.1)`;
+                    }
+
+                    update() {
+                        this.x += this.speedX;
+                        this.y += this.speedY;
+                        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                    }
+
+                    draw() {
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fillStyle = this.color;
+                        ctx.fill();
+                    }
+                }
+
+                const particles = [];
+                for (let i = 0; i < 30; i++) particles.push(new Particle());
+
+                function resizeCanvas() {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+
+                window.addEventListener('resize', resizeCanvas);
+                resizeCanvas();
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    particles.forEach(p => {
+                        p.update();
+                        p.draw();
+                    });
+                    requestAnimationFrame(animate);
+                }
+
+                animate();
+
+                // Efeito parallax otimizado
+                let mouse = { x: 0, y: 0 };
+                canvas.addEventListener('mousemove', (e) => {
+                    mouse.x = e.clientX;
+                    mouse.y = e.clientY;
                 });
-                checkClaimStatus();
-            } catch (error) {
-                alert('Erro ao reclamar tokens: ' + error.message);
-            } finally {
-                hideLoading(spinner);
+
+                function parallax() {
+                    particles.forEach(p => {
+                        const dx = (mouse.x - p.x) * 0.00001;
+                        const dy = (mouse.y - p.y) * 0.00001;
+                        p.speedX += dx;
+                        p.speedY += dy;
+                    });
+                    requestAnimationFrame(parallax);
+                }
+
+                parallax();
             }
-        }
-
-        claimButton.addEventListener('click', claimTokens);
-
-        // Verificar status ao carregar e periodicamente
-        window.addEventListener('load', checkClaimStatus);
-        setInterval(checkClaimStatus, 30000); // Verifica a cada 30 segundos
-
-        // Animação avançada do canvas com partículas
-        const canvas = document.querySelector('canvas');
-        const ctx = canvas.getContext('2d');
-
-        class Particle {
-            constructor() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 3 + 1;
-                this.speedX = Math.random() * 0.5 - 0.25;
-                this.speedY = Math.random() * 0.5 - 0.25;
-                this.color = `rgba(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255}, 0.1)`;
-            }
-
-            update() {
-                this.x += this.speedX;
-                this.y += this.speedY;
-                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-            }
-
-            draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-            }
-        }
-
-        const particles = [];
-        for (let i = 0; i < 50; i++) particles.push(new Particle());
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            requestAnimationFrame(animate);
-        }
-
-        animate();
-
-        // Efeito parallax no canvas
-        let mouse = { x: 0, y: 0 };
-        canvas.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
-
-        function parallax() {
-            particles.forEach(p => {
-                const dx = mouse.x - p.x;
-                const dy = mouse.y - p.y;
-                p.speedX += dx * 0.00002;
-                p.speedY += dy * 0.00002;
-            });
-            requestAnimationFrame(parallax);
-        }
-
-        parallax();
+        };
     </script>
 </body>
 </html>
