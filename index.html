@@ -6,13 +6,11 @@
     <title>MonFaucet</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" defer>
     <style>
-        /* Mantendo o CSS original, apenas ajustando textos para inglês onde necessário */
         :root {
             --background-start: #000000;
             --background-end: #0F1419;
             --primary-color: #007AFF;
             --secondary-color: #00D4FF;
-            --accent-color: #FF6F00;
             --text-color: #FFFFFF;
             --box-background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.07));
             --box-border: rgba(255, 255, 255, 0.1);
@@ -28,8 +26,6 @@
             color: var(--text-color);
             min-height: 100vh;
             text-align: center;
-            overflow-x: hidden;
-            position: relative;
         }
         .main-content {
             min-height: 100vh;
@@ -60,10 +56,7 @@
             border-radius: 0.7rem;
             border: 1px solid var(--box-border);
             cursor: pointer;
-            transition: all 0.4s ease-in-out;
-            font-weight: bold;
         }
-        .wallet-info button:hover { background: var(--button-hover); }
         .faucet-container {
             width: 100%;
             max-width: 24rem;
@@ -72,18 +65,23 @@
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 8px 16px var(--shadow-color);
-            margin: 0.5rem auto;
         }
         .faucet-title {
             font-size: 2.8rem;
             font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
+            margin-bottom: 1rem;
         }
+        .info-box {
+            background: var(--box-background);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.2rem;
+        }
+        .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
         .task-button, .claim-button {
             width: 100%;
             display: flex;
@@ -97,11 +95,10 @@
             border: 1px solid var(--box-border);
             cursor: pointer;
             font-weight: bold;
-            transition: all 0.4s ease-in-out;
         }
-        .task-button:hover, .claim-button:hover { 
-            transform: scale(1.05);
+        .task-button:hover, .claim-button:hover {
             background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.05);
         }
         .claim-button {
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
@@ -109,11 +106,7 @@
             cursor: not-allowed;
         }
         .claim-button.enabled { opacity: 1; cursor: pointer; }
-        .status {
-            font-size: 0.9rem;
-            margin-top: 1rem;
-            opacity: 0.8;
-        }
+        .status { font-size: 0.9rem; margin-top: 1rem; opacity: 0.8; }
         .modal {
             display: none;
             position: fixed;
@@ -139,7 +132,6 @@
             padding: 0.5rem 1rem;
             border-radius: 0.7rem;
             cursor: pointer;
-            border: 1px solid var(--box-border);
         }
         #modal-overlay {
             display: none;
@@ -185,6 +177,11 @@
                     <i class="fas fa-arrow-right arrow"></i>
                 </button>
             </div>
+            <div class="info-box" id="infoBox">
+                <div><span>Available</span><span id="available">0.00 MON</span></div>
+                <div><span>Claim Amount</span><span id="claimAmount">0.00 MON</span></div>
+                <div><span>Network</span><span>Monad Testnet</span></div>
+            </div>
             <button class="claim-button" id="claimButton" disabled>Claim Tokens</button>
             <div class="status" id="status">Connect your wallet to start.</div>
         </div>
@@ -203,8 +200,12 @@
             const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
             const ABI = [
                 {"inputs":[],"name":"claim","outputs":[],"stateMutability":"nonpayable","type":"function"},
-                {"inputs":[],"name":"getBalance","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-                {"inputs":[{"name":"","type":"address"}],"name":"lastClaim","outputs":[{"name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+                {"inputs":[],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"},
+                {"stateMutability":"payable","type":"receive"},
+                {"inputs":[],"name":"CLAIM_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+                {"inputs":[],"name":"COOLDOWN_PERIOD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+                {"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+                {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastClaim","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
             ];
             const socialLinks = {
                 "followX": "https://x.com/_roneslira?follow=true",
@@ -222,6 +223,8 @@
             const walletInfo = document.getElementById('walletInfo');
             const walletAddress = document.getElementById('walletAddress');
             const disconnectWallet = document.getElementById('disconnectWallet');
+            const available = document.getElementById('available');
+            const claimAmount = document.getElementById('claimAmount');
 
             function updateTaskButtons() {
                 taskButtons.forEach(button => {
@@ -242,13 +245,21 @@
                 }
                 try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const accounts = await provider.send("eth_requestAccounts", []);
+                    await provider.send("eth_requestAccounts", []);
                     const network = await provider.getNetwork();
                     if (network.chainId !== 10143) {
-                        await window.ethereum.request({
-                            method: 'wallet_switchEthereumChain',
-                            params: [{ chainId: '0x27AF' }]
-                        });
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: '0x27AF' }]
+                            });
+                        } catch (switchError) {
+                            if (switchError.code === 4902) {
+                                alert('Please add Monad Testnet to MetaMask manually (Chain ID: 10143).');
+                                return;
+                            }
+                            throw switchError;
+                        }
                     }
                     walletConnected = true;
                     const signer = provider.getSigner();
@@ -257,6 +268,7 @@
                     walletInfo.style.display = 'flex';
                     tasksCompleted.connectWallet = true;
                     updateTaskButtons();
+                    await updateContractInfo();
                     checkClaimStatus();
                     status.textContent = 'Wallet connected! Complete tasks to claim.';
                 } catch (error) {
@@ -275,6 +287,8 @@
                 claimButton.disabled = true;
                 claimButton.classList.remove('enabled');
                 status.textContent = 'Connect your wallet to start.';
+                available.textContent = '0.00 MON';
+                claimAmount.textContent = '0.00 MON';
             });
 
             taskButtons.forEach(button => {
@@ -305,6 +319,22 @@
                 }
             });
 
+            async function updateContractInfo() {
+                if (!walletConnected) return;
+                try {
+                    const provider = new ethers.providers.Web3Provider(window.ethereum);
+                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+                    const balance = await contract.getBalance();
+                    const claimAmt = await contract.CLAIM_AMOUNT();
+                    available.textContent = ethers.utils.formatEther(balance) + ' MON';
+                    claimAmount.textContent = ethers.utils.formatEther(claimAmt) + ' MON';
+                } catch (error) {
+                    console.error('Error fetching contract info:', error);
+                    available.textContent = 'Error';
+                    claimAmount.textContent = 'Error';
+                }
+            }
+
             async function checkClaimStatus() {
                 if (!walletConnected) {
                     claimButton.disabled = true;
@@ -318,11 +348,11 @@
                     const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                     const address = await signer.getAddress();
                     const lastClaimTime = await contract.lastClaim(address);
+                    const cooldown = await contract.COOLDOWN_PERIOD();
                     const now = Math.floor(Date.now() / 1000);
-                    const cooldown = 24 * 60 * 60;
 
-                    if (now < lastClaimTime.toNumber() + cooldown) {
-                        const remaining = lastClaimTime.toNumber() + cooldown - now;
+                    if (now < lastClaimTime.toNumber() + cooldown.toNumber()) {
+                        const remaining = lastClaimTime.toNumber() + cooldown.toNumber() - now;
                         const hours = Math.floor(remaining / 3600);
                         const minutes = Math.floor((remaining % 3600) / 60);
                         status.textContent = `Wait ${hours}h ${minutes}m for next claim.`;
@@ -333,7 +363,8 @@
                         claimButton.disabled = true;
                         claimButton.classList.remove('enabled');
                     } else {
-                        status.textContent = 'Ready! Click "Claim Tokens" to receive 0.05 MON.';
+                        const claimAmt = await contract.CLAIM_AMOUNT();
+                        status.textContent = `Ready! Click to claim ${ethers.utils.formatEther(claimAmt)} MON.`;
                         claimButton.disabled = false;
                         claimButton.classList.add('enabled');
                     }
@@ -356,10 +387,11 @@
                     const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                     const tx = await contract.claim();
                     await tx.wait();
-                    alert('Tokens claimed successfully! 0.05 MON sent.');
+                    alert('Tokens claimed successfully!');
                     tasksCompleted.followX = false;
                     tasksCompleted.likePost = false;
                     updateTaskButtons();
+                    await updateContractInfo();
                     checkClaimStatus();
                 } catch (error) {
                     console.error('Claim error:', error);
