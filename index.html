@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MonFaucet</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         :root {
             --background-start: #000000;
@@ -74,7 +73,7 @@
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 8px 16px var(--shadow-color);
-            min-height: 450px; /* Aumentado para dar mais espaço */
+            min-height: 450px;
         }
         .faucet-title {
             font-size: 2.8rem;
@@ -83,7 +82,12 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .faucet-description {
+            font-size: 1rem;
+            margin: 1.5rem 0;
+            opacity: 0.9;
         }
         .info-box {
             background: var(--box-background);
@@ -188,7 +192,7 @@
         .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); }
         footer {
             position: fixed;
-            bottom: 10px;
+            bottom: 40px;
             width: 100%;
             text-align: center;
             font-size: 0.9rem;
@@ -210,13 +214,20 @@
             color: var(--text-color);
             opacity: 0.5;
         }
-        .donate-section { margin-top: 1rem; }
+        .donate-section {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9rem;
+        }
         .donate-section button {
             background: var(--accent-color);
             color: var(--text-color);
             padding: 0.3rem 0.6rem;
             border-radius: 0.5rem;
             cursor: pointer;
+            border: none;
         }
         .ad-container {
             position: absolute;
@@ -253,7 +264,7 @@
         </div>
         <div class="faucet-container">
             <div class="faucet-title">MonFaucet</div>
-            <p>Claim MON tokens on Monad Testnet</p>
+            <p class="faucet-description">Claim MON tokens on Monad Testnet</p>
             <div class="task-buttons" id="taskButtons">
                 <button class="task-button" id="connectWalletButton">
                     <div class="flex items-center gap-3">
@@ -283,7 +294,6 @@
                 <div><span>Network</span><span>Monad Testnet</span></div>
                 <div><span>Last Claim</span><span id="lastClaim">None</span></div>
             </div>
-            <div class="g-recaptcha" data-sitekey="6LfKURIAAAAAADl_4WM4D4mXI8PoE-6lwLiC0Z0N" data-callback="enableClaim"></div>
             <button class="claim-button" id="claimButton" disabled>
                 <div class="spinner"></div>
                 <span>Claim Tokens</span>
@@ -304,11 +314,11 @@
     </div>
     <footer>
         <a href="#">About</a> | <a href="#">Contact</a> | <a href="#">Terms</a>
-        <div class="donate-section">
-            Help the Nads, donate to the faucet: 
-            <button onclick="copyContractAddress()">Copy Contract Address</button>
-        </div>
     </footer>
+    <div class="donate-section">
+        Help the Nads, donate to the faucet: 
+        <button id="copyContractBtn">Copy Contract Address</button>
+    </div>
     <div class="made-by">Feito por rLira <i class="flag flag-br"></i></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script>
@@ -334,14 +344,13 @@
         const MONAD_TESTNET = {
             chainId: '0x27AF',
             chainName: 'Monad Testnet',
-            rpcUrls: ['https://monad-testnet-1.calderachain.xyz/http'], // RPC oficial (ajuste se necessário)
+            rpcUrls: ['https://monad-testnet-1.calderachain.xyz/http'],
             nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
             blockExplorerUrls: ['https://monad-explorer.testnet.caldera.xyz']
         };
 
         let walletConnected = false;
         let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
-        let captchaVerified = false;
         const taskButtons = document.querySelectorAll('.task-button');
         const claimButton = document.getElementById('claimButton');
         const claimButtonText = claimButton.querySelector('span');
@@ -415,8 +424,6 @@
         disconnectWallet.addEventListener('click', () => {
             walletConnected = false;
             tasksCompleted = { connectWallet: false, followX: false, likePost: false };
-            captchaVerified = false;
-            grecaptcha.reset();
             walletInfo.style.display = 'none';
             updateTaskButtons();
             claimButton.disabled = true;
@@ -500,12 +507,12 @@
                     startCooldownCountdown(lastClaimTime, cooldown);
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = captchaVerified ? 'Tasks completed. Waiting for cooldown.' : 'Verify CAPTCHA to proceed.';
-                } else if (!tasksCompleted.followX || !tasksCompleted.likePost || !captchaVerified) {
+                    status.textContent = 'Tasks completed. Waiting for cooldown.';
+                } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
                     claimButtonText.textContent = 'Claim Tokens';
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = captchaVerified ? 'Complete all tasks to claim tokens.' : 'Verify CAPTCHA to proceed.';
+                    status.textContent = 'Complete all tasks to claim tokens.';
                 } else {
                     const claimAmt = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
                     claimButtonText.textContent = `Claim ${claimAmt} MON`;
@@ -541,8 +548,8 @@
         }
 
         async function claimTokens() {
-            if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost || !captchaVerified) {
-                alert('Connect wallet, complete all tasks, and verify CAPTCHA first.');
+            if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost) {
+                alert('Connect wallet and complete all tasks first.');
                 return;
             }
             claimButton.classList.add('loading');
@@ -557,8 +564,6 @@
                 alert('Tokens claimed successfully!');
                 tasksCompleted.followX = false;
                 tasksCompleted.likePost = false;
-                captchaVerified = false;
-                grecaptcha.reset();
                 updateTaskButtons();
                 await updateContractInfo();
                 checkClaimStatus();
@@ -572,18 +577,17 @@
             }
         }
 
-        function enableClaim() {
-            captchaVerified = true;
-            checkClaimStatus();
-        }
-
         function copyContractAddress() {
             navigator.clipboard.writeText(CONTRACT_ADDRESS).then(() => {
                 alert('Contract address copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy contract address:', err);
+                alert('Failed to copy contract address. Please try again.');
             });
         }
 
         claimButton.addEventListener('click', claimTokens);
+        document.getElementById('copyContractBtn').addEventListener('click', copyContractAddress);
         window.addEventListener('load', checkClaimStatus);
 
         // Animação de partículas no canvas
