@@ -62,8 +62,35 @@
             color: var(--text-color);
             opacity: 0.7;
         }
-        .banner-left { left: calc(50% - 360px); top: calc(50% - 150px); } /* Centralizado acima da faucet, ajustado para 720px */
-        .banner-right { right: calc(50% - 360px); top: calc(50% + 50px); } /* Centralizado abaixo da faucet, ajustado para 720px */
+        .wallet-info {
+            position: relative;
+            z-index: 20;
+            width: 100%;
+            max-width: 24rem;
+            margin-bottom: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: var(--box-background);
+            border-radius: 1rem;
+            border: 1px solid var(--box-border);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            display: none; /* Oculto por padrão, mostrado quando carteira conectada */
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+        .wallet-info button {
+            background: var(--primary-color);
+            color: var(--text-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.7rem;
+            border: 1px solid var(--box-border);
+            box-shadow: 0 2px 8px var(--shadow-color);
+            cursor: pointer;
+            transition: all 0.4s ease-in-out;
+            font-weight: bold;
+        }
+        .wallet-info button:hover { background: var(--button-hover); box-shadow: 0 4px 12px var(--shadow-color); }
         .faucet-container {
             position: relative;
             z-index: 10;
@@ -249,8 +276,8 @@
                 position: absolute;
                 width: 100%;
                 height: auto;
-                max-width: 420px; /* Reduzido para mobile */
-                height: 90px; /* Altura fixa para mobile */
+                max-width: 420px;
+                height: 90px;
                 top: auto;
                 left: 50%;
                 transform: translateX(-50%);
@@ -260,16 +287,17 @@
             .faucet-container { max-width: 90%; margin-top: 1rem; padding: 1rem; }
             .faucet-title { font-size: 2rem; }
             .task-button, .claim-button { padding: 0.8rem; }
+            .wallet-info { max-width: 90%; }
         }
 
         /* Desktop-specific styles */
         @media (min-width: 769px) {
             .banner {
-                width: 720px; /* Tamanho fixo desktop */
-                height: 90px; /* Altura fixa desktop */
+                width: 90px; /* Vertical em desktop */
+                height: 720px; /* Altura ajustada para vertical */
             }
-            .banner-left { left: calc(50% - 360px); top: calc(50% - 150px); }
-            .banner-right { right: calc(50% - 360px); top: calc(50% + 50px); }
+            .banner-left { left: calc(50% - 12rem - 45px); top: calc(50% - 360px); } /* Alinhado à esquerda da faucet */
+            .banner-right { right: calc(50% - 12rem - 45px); top: calc(50% - 360px); } /* Alinhado à direita da faucet */
         }
     </style>
 </head>
@@ -278,6 +306,10 @@
         <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
         <img src="https://example.com/banner-left.jpg" alt="Banner Esquerdo" class="banner banner-left">
         <img src="https://example.com/banner-right.jpg" alt="Banner Direito" class="banner banner-right">
+        <div class="wallet-info" id="walletInfo">
+            <span id="walletAddress"></span>
+            <button id="disconnectWallet">Desconectar</button>
+        </div>
         <div class="faucet-container">
             <div class="faucet-title">MonFaucet</div>
             <p>Reclame tokens MON da Monad Testnet</p>
@@ -300,13 +332,6 @@
                     <div class="flex items-center gap-3">
                         <i class="fas fa-thumbs-up icon"></i>
                         <span>Curtir nosso post no 𝕏</span>
-                    </div>
-                    <i class="fas fa-arrow-right arrow"></i>
-                </button>
-                <button class="task-button" data-task="joinTelegram">
-                    <div class="flex items-center gap-3">
-                        <i class="fab fa-telegram icon"></i>
-                        <span>Entre no grupo/canal no Telegram</span>
                     </div>
                     <i class="fas fa-arrow-right arrow"></i>
                 </button>
@@ -413,8 +438,7 @@
 
                 const socialLinks = {
                     "followX": "https://twitter.com/MonFaucet",
-                    "likePost": "https://twitter.com/MonFaucet/status/123456789",
-                    "joinTelegram": "https://t.me/MonFaucetGroup"
+                    "likePost": "https://twitter.com/MonFaucet/status/123456789"
                 };
 
                 let walletConnected = false;
@@ -426,6 +450,9 @@
                 const modal = document.getElementById('confirmation-modal');
                 const modalOverlay = document.getElementById('modal-overlay');
                 const available = document.getElementById('available');
+                const walletInfo = document.getElementById('walletInfo');
+                const walletAddress = document.getElementById('walletAddress');
+                const disconnectWallet = document.getElementById('disconnectWallet');
 
                 // Função de carregamento (spinner)
                 function showLoading(target) {
@@ -499,6 +526,10 @@
                                 });
                             }
                             walletConnected = true;
+                            const signer = provider.getSigner();
+                            const address = await signer.getAddress();
+                            walletAddress.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                            walletInfo.style.display = 'flex';
                             connectWalletButton.disabled = true;
                             connectWalletButton.style.opacity = '0.5';
                             checkClaimStatus();
@@ -515,6 +546,24 @@
                 }
 
                 connectWalletButton.addEventListener('click', connectWallet);
+
+                disconnectWallet.addEventListener('click', () => {
+                    walletConnected = false;
+                    walletInfo.style.display = 'none';
+                    connectWalletButton.disabled = false;
+                    connectWalletButton.style.opacity = '1';
+                    claimButton.disabled = true;
+                    claimButton.classList.remove('enabled');
+                    status.textContent = 'Conecte sua carteira para reclamar tokens.';
+                    tasksCompleted = 0;
+                    taskButtons.forEach(btn => {
+                        if (btn.getAttribute('data-task')) {
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                            btn.style.animation = 'fadeIn 0.5s ease-in';
+                        }
+                    });
+                });
 
                 taskButtons.forEach(button => {
                     if (button.getAttribute('data-task')) {
@@ -534,6 +583,7 @@
                         claimButton.disabled = true;
                         claimButton.classList.remove('enabled');
                         status.textContent = 'Conecte sua carteira para reclamar tokens.';
+                        available.textContent = '0.00 MON';
                         return;
                     }
 
@@ -554,10 +604,10 @@
                             claimButton.disabled = true;
                             claimButton.classList.remove('enabled');
                             status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
-                        } else if (tasksCompleted < 3) {
+                        } else if (tasksCompleted < 2) { // Ajustado para 2 tarefas após remover Telegram
                             claimButton.disabled = true;
                             claimButton.classList.remove('enabled');
-                            status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
+                            status.textContent = `Complete todas as 2 tarefas para reclamar tokens.`;
                         } else {
                             claimButton.disabled = false;
                             claimButton.classList.add('enabled');
@@ -576,7 +626,7 @@
                 }
 
                 async function claimTokens() {
-                    if (!walletConnected || tasksCompleted < 3) {
+                    if (!walletConnected || tasksCompleted < 2) {
                         alert('Conecte sua carteira e complete todas as tarefas primeiro.');
                         return;
                     }
