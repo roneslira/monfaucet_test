@@ -33,9 +33,10 @@
         .main-content {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 0 20px;
+            padding: 20px;
             position: relative;
             z-index: 1;
         }
@@ -50,9 +51,14 @@
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 4px 12px var(--shadow-color);
+            display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 0.9rem;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
         }
         .wallet-info button {
             background: var(--primary-color);
@@ -74,6 +80,7 @@
             border: 1px solid var(--box-border);
             box-shadow: 0 8px 16px var(--shadow-color);
             min-height: 450px;
+            position: relative;
         }
         .faucet-title {
             font-size: 2.8rem;
@@ -192,7 +199,7 @@
         .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); }
         footer {
             position: fixed;
-            bottom: 40px;
+            bottom: 10px;
             width: 100%;
             text-align: center;
             font-size: 0.9rem;
@@ -205,29 +212,31 @@
             margin: 0 0.5rem;
         }
         footer a:hover { color: var(--secondary-color); }
-        .made-by {
-            position: fixed;
-            bottom: 5px;
+        .donate-container {
             width: 100%;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-color);
-            opacity: 0.5;
-        }
-        .donate-section {
-            position: fixed;
-            bottom: 20px;
-            width: 100%;
+            max-width: 24rem;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--box-background);
+            border-radius: 1rem;
+            border: 1px solid var(--box-border);
+            box-shadow: 0 4px 12px var(--shadow-color);
             text-align: center;
             font-size: 0.9rem;
         }
-        .donate-section button {
+        .donate-container button {
             background: var(--accent-color);
             color: var(--text-color);
-            padding: 0.3rem 0.6rem;
+            padding: 0.5rem 1rem;
             border-radius: 0.5rem;
-            cursor: pointer;
             border: none;
+            cursor: pointer;
+            animation: pulseButton 1.5s infinite;
+        }
+        @keyframes pulseButton {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
         .ad-container {
             position: absolute;
@@ -247,10 +256,11 @@
         .ad-right { right: calc(50% - 650px); top: 50%; transform: translateY(-50%); }
         @media (max-width: 1400px) { .ad-container { display: none; } }
         @media (max-width: 768px) {
-            .faucet-container { max-width: 90%; padding: 1.5rem; min-height: 400px; }
+            .faucet-container, .donate-container { max-width: 90%; padding: 1.5rem; }
+            .faucet-container { min-height: 400px; }
             .faucet-title { font-size: 2rem; }
             .task-button, .claim-button { padding: 0.8rem; }
-            .wallet-info { max-width: 90%; }
+            .wallet-info { max-width: 90%; top: 10px; }
         }
     </style>
 </head>
@@ -300,6 +310,10 @@
             </button>
             <div class="status" id="status"></div>
         </div>
+        <div class="donate-container">
+            Help the Nads, donate to the faucet: 
+            <button id="copyContractBtn">Copy Contract Address</button>
+        </div>
         <div class="ad-container ad-right">Ad Space (300x600)</div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
@@ -315,11 +329,6 @@
     <footer>
         <a href="#">About</a> | <a href="#">Contact</a> | <a href="#">Terms</a>
     </footer>
-    <div class="donate-section">
-        Help the Nads, donate to the faucet: 
-        <button id="copyContractBtn">Copy Contract Address</button>
-    </div>
-    <div class="made-by">Feito por rLira <i class="flag flag-br"></i></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script>
         if (typeof ethers === 'undefined') {
@@ -430,8 +439,6 @@
             claimButton.classList.remove('enabled');
             claimButtonText.textContent = 'Claim Tokens';
             status.textContent = 'Connect your wallet to start.';
-            available.textContent = '0.00 MON';
-            claimAmount.textContent = '0.01 MON';
             lastClaim.textContent = 'None';
         });
 
@@ -464,9 +471,10 @@
         });
 
         async function updateContractInfo() {
-            if (!walletConnected) return;
             try {
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const provider = window.ethereum ?
+                    new ethers.providers.Web3Provider(window.ethereum) :
+                    new ethers.providers.JsonRpcProvider(MONAD_TESTNET.rpcUrls[0]);
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
                 const balance = await contract.getBalance();
                 const cachedClaim = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
@@ -579,7 +587,7 @@
 
         function copyContractAddress() {
             navigator.clipboard.writeText(CONTRACT_ADDRESS).then(() => {
-                alert('Contract address copied to clipboard!');
+                alert('Contract address copied to clipboard: ' + CONTRACT_ADDRESS);
             }).catch(err => {
                 console.error('Failed to copy contract address:', err);
                 alert('Failed to copy contract address. Please try again.');
@@ -588,7 +596,10 @@
 
         claimButton.addEventListener('click', claimTokens);
         document.getElementById('copyContractBtn').addEventListener('click', copyContractAddress);
-        window.addEventListener('load', checkClaimStatus);
+        window.addEventListener('load', () => {
+            updateContractInfo();
+            checkClaimStatus();
+        });
 
         // Animação de partículas no canvas
         const canvas = document.querySelector('canvas');
