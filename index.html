@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monad Testnet MON Faucet</title>
+    <title>FaucetBR Monad</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Montserrat', Arial, sans-serif;
-            background: linear-gradient(to bottom, #000000, #2A343C);
+            background: linear-gradient(to bottom, #009B3A, #002776); /* Verde e azul da bandeira do Brasil */
             color: #FFFFFF;
             min-height: 100vh;
             text-align: center;
@@ -23,13 +23,24 @@
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             display: flex;
-            justify-content: space-between;
+            justify-content: center; /* Centralizado, sem logo */
             align-items: center;
         }
-        nav a img { width: 200px; }
+        .flag-animation {
+            width: 200px;
+            height: auto;
+            animation: wave 3s ease-in-out infinite;
+        }
+        @keyframes wave {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
         nav button {
-            background: #374221;
-            color: #BBF531;
+            background: #FFDF00; /* Amarelo da bandeira do Brasil */
+            color: #002776; /* Azul da bandeira do Brasil */
             padding: 0.5rem 1.5rem;
             border-radius: 0.5rem;
             font-size: 1.125rem;
@@ -37,7 +48,7 @@
         }
         nav button:hover {
             transform: scale(1.05);
-            background: rgba(163, 230, 53, 0.4);
+            background: #FFD700; /* Tom mais escuro de amarelo */
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         nav button:active { transform: scale(0.95); }
@@ -57,7 +68,7 @@
             width: 100%;
             max-width: 28rem;
             padding: 2rem;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.1); /* Branco translúcido */
             backdrop-filter: blur(20px);
             border-radius: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -67,10 +78,10 @@
         .faucet-container h1 {
             font-size: 1.875rem;
             font-weight: bold;
-            color: #DDD;
+            color: #FFDF00; /* Amarelo da bandeira do Brasil */
             margin-bottom: 0.5rem;
         }
-        .faucet-container p { color: #A9B7C0; margin-bottom: 2rem; }
+        .faucet-container p { color: #FFFFFF; margin-bottom: 2rem; }
         .task-button {
             width: 100%;
             display: flex;
@@ -78,28 +89,28 @@
             align-items: center;
             padding: 1rem;
             margin-bottom: 0.75rem;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 155, 58, 0.3); /* Verde translúcido da bandeira */
             border-radius: 0.75rem;
-            color: #EEE;
+            color: #FFFFFF;
             transition: all 0.3s ease;
             cursor: pointer;
         }
-        .task-button:hover { background: rgba(0, 0, 0, 0.4); }
+        .task-button:hover { background: rgba(0, 155, 58, 0.4); }
         .task-button .icon { font-size: 1.25rem; }
-        .task-button .arrow { color: #A9B7C0; }
+        .task-button .arrow { color: #FFFFFF; }
         .info-box {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 39, 118, 0.3); /* Azul translúcido da bandeira */
             border-radius: 0.75rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
         }
         .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-        .info-box span { color: #A9B7C0; }
-        .info-box a { color: #EEE; text-decoration: none; }
+        .info-box span { color: #FFFFFF; }
+        .info-box a { color: #FFDF00; text-decoration: none; }
         .complete-button {
             width: 100%;
-            background: linear-gradient(to right, #C2FF2C, #89B31B);
-            color: #000;
+            background: linear-gradient(to right, #FFDF00, #FFD700); /* Gradiente amarelo da bandeira */
+            color: #002776; /* Azul da bandeira */
             font-weight: bold;
             padding: 0.75rem;
             border-radius: 0.75rem;
@@ -110,65 +121,61 @@
         .complete-button:hover { transform: scale(1.02); }
         .complete-button:active { transform: scale(0.98); }
         .complete-button.enabled { opacity: 1; cursor: pointer; }
-        .tasks-completed { color: #A9B7C0; font-size: 0.875rem; margin-top: 1rem; }
+        .tasks-completed { color: #FFFFFF; font-size: 0.875rem; margin-top: 1rem; }
         .decorative-blur {
             position: absolute;
             border-radius: 50%;
             filter: blur(3rem);
             pointer-events: none;
         }
-        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(194, 255, 44, 0.2); }
-        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(128, 0, 128, 0.1); }
+        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(255, 223, 0, 0.2); /* Amarelo translúcido */ }
+        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(0, 155, 58, 0.1); /* Verde translúcido */ }
     </style>
 </head>
 <body>
     <nav>
-        <a href="/"><img src="logo/newlogo_cult.png" alt="CULT.TRADE Logo" width="200"></a>
-        <div>
-            <button>Connect Wallet</button>
-            <button>🚰 Faucet</button>
-        </div>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Flag_of_Brazil.svg/200px-Flag_of_Brazil.svg.png" alt="Bandeira do Brasil" class="flag-animation">
     </nav>
     <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
     <div class="main-content">
         <div class="faucet-container">
-            <h1>Monad Testnet Faucet</h1>
+            <h1>FaucetBR Monad</h1>
             <p>Complete tasks to get tokens</p>
             <div class="task-buttons" id="taskButtons">
                 <button class="task-button" data-task="connectWallet">
                     <div class="flex items-center gap-3">
                         <span class="icon">🔗</span>
-                        <span>Connect your wallet</span>
+                        <span>Conecte sua carteira</span>
                     </div>
                     <span class="arrow">→</span>
                 </button>
                 <button class="task-button" data-task="followX">
                     <div class="flex items-center gap-3">
                         <span class="icon">𝕏</span>
-                        <span>Follow us on X.com</span>
+                        <span>Siga-nos no X.com</span>
                     </div>
                     <span class="arrow">→</span>
                 </button>
                 <button class="task-button" data-task="likePost">
                     <div class="flex items-center gap-3">
                         <span class="icon">👍</span>
-                        <span>Like our post on 𝕏</span>
+                        <span>Curtir nosso post no 𝕏</span>
                     </div>
                     <span class="arrow">→</span>
                 </button>
                 <button class="task-button" data-task="joinTelegram">
                     <div class="flex items-center gap-3">
                         <span class="icon">𝕋</span>
-                        <span>Join cult on Telegram</span>
+                        <span>Entre no grupo/canal no Telegram</span>
                     </div>
                     <span class="arrow">→</span>
                 </button>
             </div>
             <div class="info-box" id="infoBox">
-                <div><span>Available:</span><span id="available">0.00 MON</span></div>
-                <div><span>Network:</span><span>Monad Testnet</span></div>
+                <div><span>Disponível:</span><span id="available">0.00 MON</span></div>
+                <div><span>Rede:</span><span>Monad Testnet</span></div>
                 <div>
-                    <span>Contract:</span>
+                    <span>Contrato:</span>
                     <span class="flex items-center">
                         <a href="https://testnet.monadexplorer.com/address/0x4050feb951B8d87C030959766f636BF93f5Ebca2" target="_blank" rel="noopener noreferrer">
                             0x4050...bca2
@@ -176,8 +183,8 @@
                     </span>
                 </div>
             </div>
-            <button class="complete-button" id="completeButton" disabled>Complete All Tasks</button>
-            <div class="tasks-completed" id="tasksCompleted">0 of 4 tasks completed</div>
+            <button class="complete-button" id="completeButton" disabled>Completar Todas as Tarefas</button>
+            <div class="tasks-completed" id="tasksCompleted">0 de 4 tarefas completadas</div>
         </div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
@@ -225,7 +232,7 @@
                         break;
                     case 'followX':
                         // Simulação: verificar follow no X (substitua por API real)
-                        if (confirm('Você seguiu @CultTrade no X?')) {
+                        if (confirm('Você seguiu @FaucetBR no X?')) {
                             button.disabled = true;
                             button.style.opacity = '0.5';
                             tasksCompleted++;
@@ -254,7 +261,7 @@
         });
 
         function updateTasksCompleted() {
-            tasksCompletedDisplay.textContent = `${tasksCompleted} of 4 tasks completed`;
+            tasksCompletedDisplay.textContent = `${tasksCompleted} de 4 tarefas completadas`;
         }
 
         function checkCompleteButton() {
@@ -294,7 +301,7 @@
                 .catch(error => console.error('Erro ao atualizar status:', error));
         }
 
-        // Animação simples do canvas (simulação do fundo da faucet Cult Trade)
+        // Animação simples do canvas (simulação do fundo)
         const canvas = document.querySelector('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -311,11 +318,11 @@
             // Simulação de partículas ou gradientes (simplificada)
             ctx.beginPath();
             ctx.arc(canvas.width * 0.25, canvas.height * 0.25, 100, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(194, 255, 44, 0.2)';
+            ctx.fillStyle = 'rgba(255, 223, 0, 0.2)'; // Amarelo translúcido
             ctx.fill();
             ctx.beginPath();
             ctx.arc(canvas.width * 0.75, canvas.height * 0.75, 150, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(128, 0, 128, 0.1)';
+            ctx.fillStyle = 'rgba(0, 155, 58, 0.1)'; // Verde translúcido
             ctx.fill();
             requestAnimationFrame(animate);
         }
