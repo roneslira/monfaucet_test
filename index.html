@@ -3,1183 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Airdrops Dinâmico</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <title>Monad Testnet MON Faucet</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(135deg, #1E2529, #2A343C);
+            font-family: 'Montserrat', Arial, sans-serif;
+            background: linear-gradient(to bottom, #000000, #2A343C);
             color: #FFFFFF;
-            padding: 15px;
-            margin: 0;
-            text-align: center;
             min-height: 100vh;
-            transition: background 0.3s, color 0.3s;
-        }
-        body.light {
-            background: linear-gradient(135deg, #E6ECEF, #D3DCE0);
-            color: #333333;
-        }
-        .crypto-bar {
-            padding: 3px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; margin-bottom: 8px;
-            font-size: 14px; color: #A9B7C0; overflow: hidden; white-space: nowrap;
-        }
-        body.light .crypto-bar { background: rgba(0, 0, 0, 0.05); color: #666666; }
-        .crypto-ticker { display: inline-block; animation: ticker 204s linear infinite; }
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        .crypto-item { margin-right: 15px; display: inline-flex; align-items: center; gap: 5px; }
-        .crypto-item img { width: 14px; height: 14px; }
-        .header {
-            display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px;
-            padding: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }
-        body.light .header { background: rgba(0, 0, 0, 0.05); }
-        .header-icon { width: 24px; height: 24px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        h1 { margin: 0; font-weight: 500; font-size: 20px; }
-        .datetime { font-size: 20px; font-weight: 500; color: #A9B7C0; }
-        body.light .datetime { color: #666666; }
-        .total-progress { font-size: 16px; margin-bottom: 10px; color: #A9B7C0; }
-        body.light .total-progress { color: #666666; }
-        .airdrops-container {
-            display: none; grid-template-columns: repeat(2, 1fr); gap: 6px; max-width: 1000px; margin: 0 auto;
-        }
-        @media (max-width: 768px) { .airdrops-container { grid-template-columns: 1fr; } }
-        .airdrop { background: #2A343C; padding: 3px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
-        body.light .airdrop { background: #FFFFFF; }
-        .airdrop-header {
-            cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 3px 5px;
-            background: rgba(255, 255, 255, 0.05); border-radius: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }
-        body.light .airdrop-header { background: rgba(0, 0, 0, 0.05); }
-        .airdrop-header h2 { margin: 0; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 5px; }
-        .airdrop-header img { width: 14px; height: 14px; }
-        .favorite-star { cursor: pointer; font-size: 16px; line-height: 14px; color: #A9B7C0; transition: color 0.2s; }
-        .favorite-star.active { color: #FF6200; }
-        .age-info { font-size: 12px; color: #A9B7C0; }
-        .completed-text { text-decoration: line-through; }
-        .progress-bar { width: 100%; height: 3px; background: #444444; border-radius: 2px; margin-top: 2px; }
-        body.light .progress-bar { background: #CCCCCC; }
-        .progress { height: 100%; background: #FF6200; border-radius: 2px; transition: width 0.3s ease, background-color 0.3s ease; }
-        .progress.completed { background: #00D4B5; }
-        .airdrop-content { display: none; padding: 3px; }
-        .airdrop-content.open { display: block; }
-        .subtask {
-            margin: 2px 0; padding: 3px; background: #1E2529; border-radius: 3px;
-            display: flex; justify-content: space-between; align-items: center; gap: 5px; border-left: 2px solid #FF6200;
-        }
-        body.light .subtask { background: #F5F5F5; }
-        .subtask.completed { border-left: 2px solid #00D4B5; }
-        .subtask-buttons, .subtask-actions { display: flex; gap: 5px; align-items: center; }
-        button { padding: 2px 5px; border: none; border-radius: 3px; cursor: pointer; background: #FF6200; color: #FFFFFF; font-weight: 500; font-size: 11px; transition: background-color 0.2s; }
-        button:hover { background: #FF8C33; }
-        .add-btn, .timer-btn { background: #00A3FF; margin: 2px; padding: 2px 8px; font-size: 12px; width: fit-content; box-sizing: border-box; }
-        .add-btn:hover, .timer-btn:hover { background: #007ACC; }
-        .edit-btn { background: #00A3FF; width: 16px; height: 16px; line-height: 16px; padding: 0; font-size: 10px; }
-        .edit-btn:hover { background: #007ACC; }
-        .delete-btn { background: #FF6200; width: 16px; height: 16px; line-height: 16px; padding: 0; font-size: 10px; }
-        .delete-btn:hover { background: #FF8C33; }
-        .status-concluido { background: #00D4B5; }
-        .reset-buttons { display: flex; gap: 5px; width: 100%; }
-        .reset-btn { flex: 1; background: #00A3FF; padding: 4px 8px; font-size: 12px; margin: 0; }
-        .reset-btn:hover { background: #007ACC; }
-        .controls {
-            max-width: 1000px;
-            margin: 10px auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            align-items: start;
-        }
-        @media (max-width: 768px) { .controls { grid-template-columns: 1fr; } }
-        #search-bar { display: flex; align-items: center; gap: 5px; }
-        #search-input {
-            width: 100%; padding: 4px 4px 4px 24px;
-            background: #2A343C url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 5px center;
-            color: #FFFFFF; border: 1px solid #444444; border-radius: 4px; font-size: 12px; box-sizing: border-box;
-        }
-        body.light #search-input {
-            background: #F5F5F5 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>') no-repeat 5px center;
-            color: #333333; border: 1px solid #CCCCCC;
-        }
-        #json-toggle { margin: 5px 0; }
-        #json-area { display: none; margin-top: 5px; }
-        #json-area.visible { display: block; }
-        #json-file-input { margin-top: 5px; width: 100%; color: #FFFFFF; }
-        body.light #json-file-input { color: #333333; }
-        textarea {
-            width: 100%; height: 60px; margin-top: 5px;
-            background: #2A343C; color: #FFFFFF; border: 1px solid #444444; border-radius: 4px; padding: 5px;
-            box-sizing: border-box; font-size: 12px;
-        }
-        body.light textarea { background: #F5F5F5; color: #333333; border: 1px solid #CCCCCC; }
-        #pending-tasks { max-width: 1000px; margin: 15px auto; text-align: left; color: #FF6200; font-size: 13px; }
-        body.light #pending-tasks { color: #FF6200; }
-        footer {
-            max-width: 1000px; margin: 20px auto;
-            text-align: center; color: #A9B7C0; font-size: 12px;
-        }
-        body.light footer { color: #666666; }
-        .footer-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        #footer-toggle, #airdrop-info-toggle, #why-use-toggle {
-            background: #2A343C; padding: 6px 12px; font-size: 14px;
-        }
-        body.light #footer-toggle, body.light #airdrop-info-toggle, body.light #why-use-toggle { background: #CCCCCC; }
-        #footer-toggle:hover, #airdrop-info-toggle:hover, #why-use-toggle:hover { background: #444444; }
-        body.light #footer-toggle:hover, body.light #airdrop-info-toggle:hover, body.light #why-use-toggle:hover { background: #AAAAAA; }
-        #footer-content, #airdrop-info-content, #why-use-content {
-            display: none; background: rgba(255, 255, 255, 0.05); padding: 10px;
-            border-radius: 4px; text-align: left;
-        }
-        #footer-content.visible, #airdrop-info-content.visible, #why-use-content.visible { display: block; }
-        body.light #footer-content, body.light #airdrop-info-content, body.light #why-use-content { background: rgba(0, 0, 0, 0.05); }
-        #language-select {
-            padding: 4px; background: #2A343C; color: #FFFFFF;
-            border: 1px solid #444444; border-radius: 4px; font-size: 12px;
-            width: 100%; box-sizing: border-box;
-        }
-        body.light #language-select { background: #F5F5F5; color: #333333; border: 1px solid #CCCCCC; }
-        #overlay {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px); z-index: 999;
-        }
-        #wallet-modal {
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 20px;
-            border-radius: 10px; box-shadow: 0 0 20px rgba(0, 163, 255, 0.3);
-            z-index: 1000; width: 300px;
-        }
-        #wallet-modal h2 { margin: 0 0 20px; font-size: 1.5rem; color: #00A3FF; }
-        #wallet-modal button {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            width: 100%; margin: 10px 0; padding: 10px;
-            background: #00A3FF; border: none; border-radius: 5px;
-            color: #FFFFFF; font-size: 1rem; cursor: pointer; transition: background 0.2s;
-        }
-        #wallet-modal button:hover { background: #007ACC; }
-        #wallet-modal img { width: 20px; height: 20px; }
-        .timer-btn { position: relative; }
-        .timer-modal {
-            display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
-            background: #2A343C; color: #FFFFFF; padding: 10px; border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); z-index: 1001; width: 120px;
             text-align: center;
+            overflow-x: hidden;
         }
-        body.light .timer-modal { background: #F5F5F5; color: #333333; }
-        .timer-modal input {
-            width: 80px; padding: 4px; margin-top: 5px; background: #1E2529; color: #FFFFFF;
-            border: 1px solid #444444; border-radius: 3px; font-size: 12px; text-align: center;
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 50;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        body.light .timer-modal input { background: #FFFFFF; color: #333333; border: 1px solid #CCCCCC; }
-        .timer-modal button { background: #00A3FF; padding: 4px 8px; font-size: 10px; margin-top: 5px; }
-        .timer-modal button:hover { background: #007ACC; }
-        .timer-countdown {
-            font-size: 10px; color: #A9B7C0; margin-left: 5px; background: rgba(255, 255, 255, 0.05);
-            padding: 2px 5px; border-radius: 3px;
+        nav a img { width: 200px; }
+        nav button {
+            background: #374221;
+            color: #BBF531;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            transition: all 0.5s ease-in-out, transform 0.2s;
         }
-        body.light .timer-countdown { color: #666666; background: rgba(0, 0, 0, 0.05); }
-        .notification {
-            display: none; position: fixed; bottom: 20px; right: 20px;
-            background: rgba(30, 37, 41, 0.7); color: #FFFFFF; padding: 10px 15px;
-            border-radius: 5px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); z-index: 9999;
-            animation: slideIn 0.5s ease-out;
+        nav button:hover {
+            transform: scale(1.05);
+            background: rgba(163, 230, 53, 0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
-        @keyframes slideIn {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        nav button:active { transform: scale(0.95); }
+        .main-content {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 2;
         }
-        .notification button {
-            background: none; border: none; color: #FFFFFF; font-size: 14px; cursor: pointer;
-            position: absolute; top: 5px; right: 5px;
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .faucet-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 28rem;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            margin-top: 5rem;
         }
+        .faucet-container h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #DDD;
+            margin-bottom: 0.5rem;
+        }
+        .faucet-container p { color: #A9B7C0; margin-bottom: 2rem; }
+        .task-button {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            color: #EEE;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .task-button:hover { background: rgba(0, 0, 0, 0.4); }
+        .task-button .icon { font-size: 1.25rem; }
+        .task-button .arrow { color: #A9B7C0; }
+        .info-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
+        .info-box span { color: #A9B7C0; }
+        .info-box a { color: #EEE; text-decoration: none; }
+        .complete-button {
+            width: 100%;
+            background: linear-gradient(to right, #C2FF2C, #89B31B);
+            color: #000;
+            font-weight: bold;
+            padding: 0.75rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .complete-button:hover { transform: scale(1.02); }
+        .complete-button:active { transform: scale(0.98); }
+        .tasks-completed { color: #A9B7C0; font-size: 0.875rem; margin-top: 1rem; }
+        .decorative-blur {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(3rem);
+            pointer-events: none;
+        }
+        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(194, 255, 44, 0.2); }
+        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(128, 0, 128, 0.1); }
     </style>
 </head>
 <body>
-    <div id="overlay"></div>
-    <div class="crypto-bar" id="crypto-bar">Carregando Top 100 Criptomoedas...</div>
-    <div class="header">
-        <span class="header-icon">💰</span>
-        <h1>Painel de Airdrops</h1>
-        <button class="timer-btn add-btn" id="timer-toggle">⏱️</button>
-        <div class="datetime" id="datetime"></div>
-    </div>
-    <div class="total-progress" id="total-progress">Progresso Total: 0%</div>
-    <div class="airdrops-container" id="airdrops"></div>
-    <div class="controls">
-        <div class="control-group">
-            <button class="add-btn add-airdrop-btn" id="add-airdrop-btn">+ Adicionar Airdrop</button>
-            <div class="reset-buttons">
-                <button class="reset-btn" id="reset-manual-btn">Resetar Manual</button>
-                <button class="reset-btn" id="undo-reset-btn">Desfazer Reset</button>
+    <nav>
+        <a href="/"><img src="logo/newlogo_cult.png" alt="CULT.TRADE Logo" width="200"></a>
+        <div>
+            <button>Connect Wallet</button>
+            <button>🚰 Faucet</button>
+        </div>
+    </nav>
+    <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
+    <div class="main-content">
+        <div class="faucet-container">
+            <h1>Monad Testnet Faucet</h1>
+            <p>Complete tasks to get tokens</p>
+            <div class="task-buttons">
+                <button class="task-button">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">🔗</span>
+                        <span>Connect your wallet</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">𝕏</span>
+                        <span>Follow us on X.com</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">👍</span>
+                        <span>Like our post on 𝕏</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">𝕋</span>
+                        <span>Join cult on Telegram</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
             </div>
-            <div id="search-bar">
-                <input type="text" id="search-input" placeholder="Buscar airdrop ou subtarefa">
+            <div class="info-box">
+                <div><span>Available:</span><span>0.00 MON</span></div>
+                <div><span>Network:</span><span>Monad Testnet</span></div>
+                <div>
+                    <span>Contract:</span>
+                    <span class="flex items-center">
+                        <a href="https://testnet.monadexplorer.com/address/0x4050feb951B8d87C030959766f636BF93f5Ebca2" target="_blank" rel="noopener noreferrer">
+                            0x4050...bca2
+                        </a>
+                    </span>
+                </div>
             </div>
-            <select id="language-select">
-                <option value="pt-BR">Português (Brasil)</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="ru">Русский</option>
-            </select>
+            <button class="complete-button" disabled>Complete All Tasks</button>
+            <div class="tasks-completed">0 of 4 tasks completed</div>
         </div>
-        <div class="control-group">
-            <button class="add-btn" id="export-manual-btn">Exportar Manual</button>
-            <button class="add-btn" id="export-auto-btn">Exportar Auto</button>
-            <button class="add-btn" id="clear-favorites-btn">Limpar Favoritos</button>
-            <button class="add-btn" id="json-toggle">Mostrar JSON</button>
-            <div id="json-area">
-                <textarea id="import-text" placeholder="Copie ou cole seu código JSON aqui"></textarea>
-                <input type="file" id="json-file-input" accept=".json">
-                <button class="add-btn" id="import-btn">Importar Airdrops</button>
-                <button class="add-btn" id="import-file-btn">Importar Arquivo</button>
-            </div>
-        </div>
-        <div class="control-group">
-            <button class="add-btn" id="filter-all-btn">Todos</button>
-            <button class="add-btn" id="filter-pending-btn">Pendentes</button>
-            <button class="add-btn" id="filter-completed-btn">Concluídos</button>
-            <button class="add-btn" id="toggle-theme-btn">Tema Claro/Escuro</button>
-        </div>
+        <div class="decorative-blur blur-1"></div>
+        <div class="decorative-blur blur-2"></div>
     </div>
-    <div id="pending-tasks"></div>
-    <footer>
-        <div class="footer-buttons">
-            <button id="footer-toggle">Como funciona?</button>
-            <button id="airdrop-info-toggle">O que é um airdrop?</button>
-            <button id="why-use-toggle">Por que usar um gerenciador?</button>
-        </div>
-        <div id="footer-content" class="pt-BR">
-            <p><strong>Gerenciador de Airdrops:</strong> Este painel ajuda você a organizar e acompanhar airdrops de criptomoedas. Veja como usar:</p>
-            <ul>
-                <li><strong>Adicionar Airdrop:</strong> Clique no botão "+ Adicionar Airdrop" para criar um novo projeto.</li>
-                <li><strong>Subtarefas:</strong> Dentro de cada airdrop, adicione tarefas (ex.: "Checkin", "Swap") com links. Clique no nome do airdrop para abrir ou fechar a lista de subtarefas.</li>
-                <li><strong>Favoritar:</strong> Clique na estrela (★) para destacar airdrops importantes no topo da sua coluna.</li>
-                <li><strong>Status:</strong> Marque tarefas como "Concluído" ou "Pendente" clicando em "Status" – o menu permanece aberto para facilitar múltiplas marcações.</li>
-                <li><strong>Editar:</strong> Use o ícone ✏️ para mudar nomes ou links sem recriar.</li>
-                <li><strong>Reset Manual:</strong> Use "Resetar Manual" para mudar todas as subtarefas para "Pendente" a qualquer momento; "Desfazer Reset" reverte essa ação se necessário.</li>
-                <li><strong>Exportar/Importar:</strong> Salve ou carregue sua lista com os botões "Exportar" e "Importar". Use "Exportar Auto" para salvar um arquivo JSON no seu computador e "Importar Arquivo" para carregar de volta.</li>
-                <li><strong>Filtros:</strong> Use "Todos", "Pendentes" ou "Concluídos" para organizar sua visualização.</li>
-                <li><strong>Cronômetro:</strong> Ative alertas para subtarefas com o botão ⏱️, definindo intervalos específicos por tarefa para notificações sonoras e pop-ups.</li>
-            </ul>
-            <p>Tudo é salvo no seu navegador e reseta às 21h diariamente! Para backups permanentes, use "Exportar Auto" e guarde o arquivo em uma pasta como C:\Airdrops.</p>
-        </div>
-        <div id="footer-content" class="en" style="display: none;">
-            <p><strong>Airdrop Manager:</strong> This dashboard helps you organize and track cryptocurrency airdrops. Here's how to use it:</p>
-            <ul>
-                <li><strong>Add Airdrop:</strong> Click the "+ Add Airdrop" button to create a new project.</li>
-                <li><strong>Subtasks:</strong> Inside each airdrop, add tasks (e.g., "Checkin", "Swap") with links. Click the airdrop name to open or close the subtask list.</li>
-                <li><strong>Favorite:</strong> Click the star (★) to highlight important airdrops at the top of your column.</li>
-                <li><strong>Status:</strong> Mark tasks as "Completed" or "Pending" by clicking "Status" – the menu stays open for multiple markings.</li>
-                <li><strong>Edit:</strong> Use the ✏️ icon to change names or links without recreating.</li>
-                <li><strong>Manual Reset:</strong> Use "Manual Reset" to change all subtasks to "Pending" anytime; "Undo Reset" reverts this action if needed.</li>
-                <li><strong>Export/Import:</strong> Save or load your list with the "Export" and "Import" buttons. Use "Export Auto" to save a JSON file on your computer and "Import File" to load it back.</li>
-                <li><strong>Filters:</strong> Use "All", "Pending", or "Completed" to organize your view.</li>
-                <li><strong>Timer:</strong> Activate alerts for subtasks with the ⏱️ button, setting specific intervals per task for sound and pop-up notifications.</li>
-            </ul>
-            <p>Everything is saved in your browser and resets daily at 9 PM! For permanent backups, use "Export Auto" and store the file in a folder like C:\Airdrops.</p>
-        </div>
-        <div id="footer-content" class="es" style="display: none;">
-            <p><strong>Gestor de Airdrops:</strong> Este panel te ayuda a organizar y seguir airdrops de criptomonedas. Así se usa:</p>
-            <ul>
-                <li><strong>Añadir Airdrop:</strong> Haz clic en el botón "+ Añadir Airdrop" para crear un nuevo proyecto.</li>
-                <li><strong>Subtareas:</strong> Dentro de cada airdrop, añade tareas (ej.: "Checkin", "Swap") con enlaces. Haz clic en el nombre del airdrop para abrir o cerrar la lista de subtareas.</li>
-                <li><strong>Favorito:</strong> Haz clic en la estrella (★) para destacar airdrops importantes en la parte superior de tu columna.</li>
-                <li><strong>Estado:</strong> Marca las tareas como "Completado" o "Pendiente" clicando en "Status" – el menú permanece abierto para facilitar múltiples marcas.</li>
-                <li><strong>Editar:</strong> Usa el ícono ✏️ para cambiar nombres o enlaces sin recrear.</li>
-                <li><strong>Reset Manual:</strong> Usa "Resetear Manualmente" para cambiar todas las subtareas a "Pendiente" en cualquier momento; "Deshacer Reseteo" revierte esta acción si es necesario.</li>
-                <li><strong>Exportar/Importar:</strong> Guarda o carga tu lista con los botões "Exportar" e "Importar". Usa "Exportar Auto" para guardar un archivo JSON en tu computadora y "Importar Archivo" para cargarlo de vuelta.</li>
-                <li><strong>Filtros:</strong> Usa "Todos", "Pendentes" o "Completados" para organizar tu vista.</li>
-                <li><strong>Cronómetro:</strong> Activa alertas para subtareas con el botón ⏱️, estableciendo intervalos específicos por tarea para notificaciones sonoras y emergentes.</li>
-            </ul>
-            <p>¡Todo se guarda en tu navegador y se reinicia diariamente a las 21h! Para respaldos permanentes, usa "Exportar Auto" y guarda el archivo en una carpeta como C:\Airdrops.</p>
-        </div>
-        <div id="footer-content" class="ru" style="display: none;">
-            <p><strong>Менеджер Airdrops:</strong> Эта панель помогает вам организовать и отслеживать airdrops криптовалют. Вот как её использовать:</p>
-            <ul>
-                <li><strong>Добавить Airdrop:</strong> Нажмите кнопку "+ Добавить Airdrop", чтобы создать новый проект.</li>
-                <li><strong>Подзадачи:</strong> Внутри каждого airdrop добавляйте задачи (например, "Checkin", "Swap") с ссылками. Нажмите на название airdrop, чтобы открыть или закрыть список подзадач.</li>
-                <li><strong>Избранное:</strong> Нажмите на звезду (★), чтобы выделить важные airdrops вверху столбца.</li>
-                <li><strong>Статус:</strong> Отмечайте задачи как "Завершено" или "В ожидании", нажимая "Status" – меню остаётся открытым для удобства множественной отметки.</li>
-                <li><strong>Редактировать:</strong> Используйте значок ✏️, чтобы изменить названия или ссылки без пересоздания.</li>
-                <li><strong>Ручной сброс:</strong> Используйте "Ручной сброс", чтобы изменить все подзадачи на "В ожидании" в любое время; "Отменить сброс" возвращает предыдущее состояние, если нужно.</li>
-                <li><strong>Экспорт/Импорт:</strong> Сохраняйте или загружайте список с помощью кнопок "Экспорт" и "Импорт". Используйте "Автоэкспорт" для сохранения JSON-файла на компьютер и "Импорт файла" для его загрузки обратно.</li>
-                <li><strong>Фильтры:</strong> Используйте "Все", "В ожидании" или "Завершено" для сортировки.</li>
-                <li><strong>Таймер:</strong> Активируйте уведомления для подзадач с помощью кнопки ⏱️, устанавливая конкретные интервалы для звуковых и всплывающих уведомлений.</li>
-            </ul>
-            <p>Всё сохраняется в вашем браузере и сбрасывается ежедневно в 21:00! Для постоянных резервных копий используйте "Автоэкспорт" и храните файл в папке, например, C:\Airdrops.</p>
-        </div>
-        <div id="airdrop-info-content" class="pt-BR">
-            <p><strong>O que é um airdrop?</strong> Um airdrop é como um "brinde" no mundo das criptomoedas. Projetos novos distribuem moedas ou tokens grátis para divulgar seu trabalho e atrair usuários. É como ganhar amostras grátis em uma loja, mas no caso são ativos digitais que podem ter valor no futuro. Para participar, você geralmente precisa fazer tarefas simples, como seguir redes sociais, entrar em grupos ou testar plataformas.</p>
-        </div>
-        <div id="airdrop-info-content" class="en" style="display: none;">
-            <p><strong>What is an airdrop?</strong> An airdrop is like a "freebie" in the cryptocurrency world. New projects distribute free coins or tokens to promote their work and attract users. It’s like getting free samples at a store, but these are digital assets that might gain value later. To join, you usually need to do simple tasks, like following social media, joining groups, or testing platforms.</p>
-        </div>
-        <div id="airdrop-info-content" class="es" style="display: none;">
-            <p><strong>¿Qué es un airdrop?</strong> Un airdrop es como un "regalo" en el mundo de las criptomonedas. Los proyectos nuevos distribuyen monedas o tokens gratis para promocionar su trabajo y atraer usuarios. Es como recibir muestras gratis en una tienda, pero son activos digitales que pueden tener valor en el futuro. Para participar, normalmente necesitas realizar tareas simples, como seguir redes sociales, unirte a grupos o probar plataformas.</p>
-        </div>
-        <div id="airdrop-info-content" class="ru" style="display: none;">
-            <p><strong>Что такое airdrop?</strong> Airdrop — это как "бесплатный подарок" в мире криптовалют. Новые проекты раздают бесплатные монеты или токены, чтобы продвигать свою работу и привлекать пользователей. Это похоже на получение бесплатных образцов в магазине, но это цифровые активы, которые могут вырасти в цене. Чтобы участвовать, обычно нужно выполнять простые задачи, такие как подписка на соцсети, вступление в группы или тестирование платформ.</p>
-        </div>
-        <div id="why-use-content" class="pt-BR">
-            <p><strong>Por que usar um gerenciador de airdrops?</strong> Participar de airdrops pode ser confuso: são muitos projetos, tarefas e links para acompanhar. Um gerenciador como este organiza tudo em um só lugar. Você pode ver o que já fez, favoritar os airdrops mais promissores e não perder prazos ou recompensas. É como ter uma agenda para não esquecer de pegar seus "brindes" digitais – economiza tempo e aumenta suas chances de lucrar!</p>
-        </div>
-        <div id="why-use-content" class="en" style="display: none;">
-            <p><strong>Why use an airdrop manager?</strong> Participating in airdrops can be confusing: there are many projects, tasks, and links to track. A manager like this organizes everything in one place. You can see what you’ve done, favorite the most promising airdrops, and never miss deadlines or rewards. It’s like having a planner to ensure you don’t forget your digital "freebies" – it saves time and boosts your chances of profiting!</p>
-        </div>
-        <div id="why-use-content" class="es" style="display: none;">
-            <p><strong>¿Por qué usar un gestor de airdrops?</strong> Participar en airdrops puede ser confuso: hay muchos proyectos, tareas y enlaces que seguir. Un gestor como este organiza todo en un solo lugar. Puedes ver qué has hecho, marcar como favoritos los airdrops más prometedores y no perder plazos ni recompensas. ¡Es como tener una agenda para no olvidar tus "regalos" digitales – ahorra tiempo y aumenta tus posibilidades de ganar!</p>
-        </div>
-        <div id="why-use-content" class="ru" style="display: none;">
-            <p><strong>Зачем использовать менеджер airdrops?</strong> Участие в airdrops может быть запутанным: много проектов, задач и ссылок для отслеживания. Менеджер вроде этого организует всё в одном месте. Вы можете видеть, что уже сделано, отмечать самые перспективные airdrops и не пропускать сроки или награды. Это как ежедневник, чтобы не забыть забрать свои цифровые "подарки" – экономит время и увеличивает шансы на прибыль!</p>
-        </div>
-    </footer>
-    <div id="wallet-modal">
-        <h2>Conectar Carteira</h2>
-        <button id="connect-metamask"><img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" alt="MetaMask"> MetaMask</button>
-    </div>
-    <div id="notification" class="notification"></div>
-    <audio id="alert-sound" src="https://www.myinstance.com/notification.mp3"></audio> <!-- Substitua pelo URL do som -->
     <script>
-        (function() {
-            console.log("Script iniciado");
+        // Placeholder para interatividade básica (será expandido no backend)
+        const taskButtons = document.querySelectorAll('.task-button');
+        let tasksCompleted = 0;
 
-            const CONTRACT_ADDRESS = "0x9B5d862f1AF744A8418A347ab4258260ea72ED9F";
-            const TOKEN_ID = "0";
-            const ABI = [{
-                "constant": true,
-                "inputs": [{"name": "_owner", "type": "address"}, {"name": "_id", "type": "uint256"}],
-                "name": "balanceOf",
-                "outputs": [{"name": "", "type": "uint256"}],
-                "type": "function"
-            }];
-            const MONAD_CHAIN_ID = 10143;
-            const CHAIN_CONFIG = {
-                chainId: `0x${MONAD_CHAIN_ID.toString(16)}`,
-                chainName: "Monad Testnet",
-                rpcUrls: ["https://testnet-rpc.monad.xyz/"],
-                nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 }
-            };
-
-            let airdrops = JSON.parse(localStorage.getItem('airdrops')) || [];
-            let lastResetDate = localStorage.getItem('lastResetDate') || null;
-            let filterStatus = 'all';
-            let searchQuery = '';
-            let backupAirdrops = null;
-            let timerActive = JSON.parse(localStorage.getItem('timerActive')) || false;
-
-            // Adicionar IDs únicos aos airdrops e subtarefas existentes, incluindo alertInterval
-            airdrops.forEach(airdrop => {
-                if (!airdrop.id) airdrop.id = 'airdrop_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                airdrop.subtarefas.forEach(sub => {
-                    if (!sub.id) sub.id = 'sub_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                    if (!sub.alertInterval) sub.alertInterval = 0; // Padrão: desativado
-                    if (!sub.lastAlert) sub.lastAlert = null; // Para rastrear o último alerta
-                });
+        taskButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                tasksCompleted++;
+                updateTasksCompleted();
+                checkCompleteButton();
             });
+        });
 
-            const translations = {
-                "pt-BR": {
-                    title: "Painel de Airdrops", addAirdrop: "+ Adicionar Airdrop", exportManual: "Exportar Manual",
-                    exportAuto: "Exportar Auto", clearFavorites: "Limpar Favoritos", showJson: "Mostrar JSON",
-                    importAirdrops: "Importar Airdrops", importFile: "Importar Arquivo", filterAll: "Todos",
-                    filterPending: "Pendentes", filterCompleted: "Concluídos", toggleTheme: "Tema Claro/Escuro",
-                    searchPlaceholder: "Buscar airdrop ou subtarefa", jsonPlaceholder: "Copie ou cole seu código JSON aqui",
-                    notesPlaceholder: "Notas", totalProgress: "Progresso Total", open: "Abrir", status: "Status",
-                    howItWorks: "Como funciona?", whatIsAirdrop: "O que é um airdrop?", whyUse: "Por que usar um gerenciador?",
-                    pendingTasks: "Tarefas Pendentes do Dia Anterior", exportManualAlert: "Airdrops exportados! Copie o texto da caixa para salvar.",
-                    exportAutoAlert: "Arquivo JSON salvo! Guarde-o em uma pasta como C:\\Airdrops para backup.",
-                    importSuccessAlert: "Airdrops importados com sucesso!", importInvalidAlert: "Erro ao importar: JSON inválido.",
-                    importFileSuccessAlert: "Airdrops importados com sucesso do arquivo!",
-                    importFileInvalidAlert: "Erro ao importar: Arquivo JSON inválido.",
-                    importFileSelectAlert: "Por favor, selecione um arquivo JSON.",
-                    deleteConfirm: "Tem certeza que deseja excluir", resetAlert: "Reset diário às 21h concluído!",
-                    warningAlert: "Falta 1 hora para o reset às 21h! Ainda há subtarefas pendentes.",
-                    subtaskName: "Texto da Subtarefa", subtaskLink: "Link da Subtarefa", addSubtask: "+ Subtarefa",
-                    chooseFile: "Escolher arquivo", noFileChosen: "Nenhum arquivo escolhido", resetManual: "Resetar Manual",
-                    undoReset: "Desfazer Reset", resetManualAlert: "Reset manual concluído! Todas as subtarefas foram marcadas como Pendentes.",
-                    undoResetAlert: "Reset manual desfeito! Estado anterior restaurado.", noUndoAvailable: "Nenhum reset manual disponível para desfazer."
-                },
-                "en": {
-                    title: "Airdrops Dashboard", addAirdrop: "+ Add Airdrop", exportManual: "Export Manual",
-                    exportAuto: "Export Auto", clearFavorites: "Clear Favorites", showJson: "Show JSON",
-                    importAirdrops: "Import Airdrops", importFile: "Import File", filterAll: "All",
-                    filterPending: "Pending", filterCompleted: "Completed", toggleTheme: "Light/Dark Theme",
-                    searchPlaceholder: "Search airdrop or subtask", jsonPlaceholder: "Copy or paste your JSON code here",
-                    notesPlaceholder: "Notes", totalProgress: "Total Progress", open: "Open", status: "Status",
-                    howItWorks: "How does it work?", whatIsAirdrop: "What is an airdrop?", whyUse: "Why use a manager?",
-                    pendingTasks: "Pending Tasks from the Previous Day", exportManualAlert: "Airdrops exported! Copy the text from the box to save.",
-                    exportAutoAlert: "JSON file saved! Store it in a folder like C:\\Airdrops for backup.",
-                    importSuccessAlert: "Airdrops imported successfully!", importInvalidAlert: "Error importing: Invalid JSON.",
-                    importFileSuccessAlert: "Airdrops imported successfully from file!",
-                    importFileInvalidAlert: "Error importing: Invalid JSON file.",
-                    importFileSelectAlert: "Please select a JSON file.", deleteConfirm: "Are you sure you want to delete",
-                    resetAlert: "Daily reset at 9 PM completed!", warningAlert: "1 hour left until the 9 PM reset! There are still pending subtasks.",
-                    subtaskName: "Subtask Text", subtaskLink: "Subtask Link", addSubtask: "+ Subtask",
-                    chooseFile: "Choose file", noFileChosen: "No file chosen", resetManual: "Manual Reset",
-                    undoReset: "Undo Reset", resetManualAlert: "Manual reset completed! All subtasks have been marked as Pending.",
-                    undoResetAlert: "Manual reset undone! Previous state restored.", noUndoAvailable: "No manual reset available to undo."
-                },
-                "es": {
-                    title: "Panel de Airdrops", addAirdrop: "+ Añadir Airdrop", exportManual: "Exportar Manual",
-                    exportAuto: "Exportar Auto", clearFavorites: "Limpiar Favoritos", showJson: "Mostrar JSON",
-                    importAirdrops: "Importar Airdrops", importFile: "Importar Archivo", filterAll: "Todos",
-                    filterPending: "Pendentes", filterCompleted: "Completados", toggleTheme: "Tema Claro/Oscuro",
-                    searchPlaceholder: "Buscar airdrop o subtarea", jsonPlaceholder: "Copia o pega tu código JSON aquí",
-                    notesPlaceholder: "Notas", totalProgress: "Progreso Total", open: "Abrir", status: "Estado",
-                    howItWorks: "¿Cómo funciona?", whatIsAirdrop: "¿Qué es un airdrop?", whyUse: "¿Por qué usar un gestor?",
-                    pendingTasks: "Tareas Pendientes del Día Anterior", exportManualAlert: "¡Airdrops exportados! Copia el texto del cuadro para guardar.",
-                    exportAutoAlert: "¡Archivo JSON guardado! Guárdalo en una carpeta como C:\\Airdrops para respaldo.",
-                    importSuccessAlert: "¡Airdrops importados con éxito!", importInvalidAlert: "Error al importar: JSON inválido.",
-                    importFileSuccessAlert: "¡Airdrops importados con éxito desde el archivo!",
-                    importFileInvalidAlert: "Error al importar: Archivo JSON inválido.",
-                    importFileSelectAlert: "Por favor, selecciona un archivo JSON.",
-                    deleteConfirm: "¿Estás seguro de que quieres eliminar", resetAlert: "¡Reinicio diario a las 21h completado!",
-                    warningAlert: "¡Falta 1 hora para el reinicio a las 21h! Todavía hay subtareas pendientes.",
-                    subtaskName: "Texto de la Subtarea", subtaskLink: "Enlace de la Subtarea", addSubtask: "+ Subtarea",
-                    chooseFile: "Elegir archivo", noFileChosen: "Ningún archivo elegido", resetManual: "Resetear Manualmente",
-                    undoReset: "Deshacer Reseteo", resetManualAlert: "¡Reseteo manual completado! Todas las subtareas se han marcado como Pendentes.",
-                    undoResetAlert: "¡Reseteo manual deshecho! Estado anterior restaurado.", noUndoAvailable: "No hay reseteo manual disponible para deshacer."
-                },
-                "ru": {
-                    title: "Панель Airdrops", addAirdrop: "+ Добавить Airdrop", exportManual: "Экспорт вручную",
-                    exportAuto: "Автоэкспорт", clearFavorites: "Очистить избранное", showJson: "Показать JSON",
-                    importAirdrops: "Импорт Airdrops", importFile: "Импорт файла", filterAll: "Все",
-                    filterPending: "В ожидании", filterCompleted: "Завершено", toggleTheme: "Светлая/Тёмная тема",
-                    searchPlaceholder: "Поиск airdrop или подзадачи", jsonPlaceholder: "Скопируйте или вставьте ваш код JSON сюда",
-                    notesPlaceholder: "Заметки", totalProgress: "Общий прогресс", open: "Открыть", status: "Статус",
-                    howItWorks: "Как это работает?", whatIsAirdrop: "Что такое airdrop?", whyUse: "Зачем использовать менеджер?",
-                    pendingTasks: "Ожидающие задачи за предыдущий день", exportManualAlert: "Airdrops экспортированы! Скопируйте текст из окна для сохранения.",
-                    exportAutoAlert: "Файл JSON сохранён! Храните его в папке, например, C:\\Airdrops, для резервной копии.",
-                    importSuccessAlert: "Airdrops успешно импортированы!", importInvalidAlert: "Ошибка импорта: Неверный JSON.",
-                    importFileSuccessAlert: "Airdrops успешно импортированы из файла!",
-                    importFileInvalidAlert: "Ошибка импорта: Неверный JSON-файл.",
-                    importFileSelectAlert: "Пожалуйста, выберите файл JSON.",
-                    deleteConfirm: "Вы уверены, что хотите удалить", resetAlert: "Ежедневный сброс в 21:00 завершён!",
-                    warningAlert: "Остался 1 час до сброса в 21:00! Есть ещё незавершённые подзадачи.",
-                    subtaskName: "Текст подзадачи", subtaskLink: "Ссылка подзадачи", addSubtask: "+ Подзадача",
-                    chooseFile: "Выбрать файл", noFileChosen: "Файл не выбран", resetManual: "Ручной сброс",
-                    undoReset: "Отменить сброс", resetManualAlert: "Ручной сброс завершён! Все подзадачи отмечены как В ожидании.",
-                    undoResetAlert: "Ручной сброс отменён! Предыдущее состояние восстановлено.", noUndoAvailable: "Нет ручного сброса для отмены."
-                }
-            };
+        function updateTasksCompleted() {
+            document.querySelector('.tasks-completed').textContent = `${tasksCompleted} of 4 tasks completed`;
+        }
 
-            async function conectarWallet() {
-                try {
-                    if (!window.ethereum || !window.ethereum.isMetaMask) throw new Error("MetaMask não detectada ou conflito com outra carteira.");
-                    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
-                    await provider.send("eth_requestAccounts", []);
-                    const signer = provider.getSigner();
-                    const account = await signer.getAddress();
-                    const { chainId } = await provider.getNetwork();
-
-                    if (parseInt(chainId) !== MONAD_CHAIN_ID) {
-                        try {
-                            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_CONFIG.chainId }] });
-                        } catch (switchError) {
-                            if (switchError.code === 4902) {
-                                await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [CHAIN_CONFIG] });
-                            } else {
-                                throw switchError;
-                            }
-                        }
-                    }
-
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                    const balance = await contract.balanceOf(account, TOKEN_ID);
-                    if (balance > 0) {
-                        document.getElementById('airdrops').style.display = 'grid';
-                        document.getElementById('wallet-modal').style.display = 'none';
-                        document.getElementById('overlay').style.display = 'none';
-                        alert("Acesso liberado!");
-                        iniciarPainel();
-                    } else {
-                        alert("Você precisa do NFT de acesso da Monad Testnet!");
-                    }
-                } catch (error) {
-                    console.error("Erro ao conectar:", error);
-                    alert("Erro ao verificar NFT: " + error.message);
-                }
-            }
-
-            function iniciarPainel() {
-                console.log("Painel iniciado!");
-                updateLanguage();
-                renderizarPainel();
-                atualizarCriptoPrecos();
-                setInterval(atualizarCriptoPrecos, 60000);
-                atualizarDataHora();
-                setInterval(atualizarDataHora, 1000);
-                startTimerCheck(); // Inicia a verificação do cronômetro
-
-                const events = {
-                    'add-airdrop-btn': adicionarAirdrop,
-                    'export-manual-btn': exportarAirdrops,
-                    'export-auto-btn': exportarAirdropsAuto,
-                    'clear-favorites-btn': clearFavorites,
-                    'toggle-theme-btn': toggleTheme,
-                    'filter-all-btn': () => filterAirdrops('all'),
-                    'filter-pending-btn': () => filterAirdrops('pending'),
-                    'filter-completed-btn': () => filterAirdrops('completed'),
-                    'search-input': searchAirdrops,
-                    'json-toggle': toggleJsonArea,
-                    'import-btn': importarAirdrops,
-                    'import-file-btn': importarArquivo,
-                    'footer-toggle': toggleFooter,
-                    'airdrop-info-toggle': toggleAirdropInfo,
-                    'why-use-toggle': toggleWhyUse,
-                    'reset-manual-btn': resetarManual,
-                    'undo-reset-btn': desfazerReset,
-                    'language-select': () => { updateLanguage(); renderizarPainel(); },
-                    'timer-toggle': toggleTimer
-                };
-                Object.entries(events).forEach(([id, fn]) => {
-                    const el = document.getElementById(id);
-                    if (el) el.addEventListener(id === 'search-input' || id === 'language-select' ? 'change' : 'click', fn);
-                });
-
-                // Delegação de eventos para airdrops
-                document.getElementById('airdrops').addEventListener('click', (e) => {
-                    const target = e.target;
-                    const airdropDiv = target.closest('.airdrop');
-                    if (!airdropDiv) return;
-
-                    const airdropId = airdropDiv.getAttribute('data-airdrop-id');
-                    const subtaskDiv = target.closest('.subtask');
-                    const lang = document.getElementById('language-select').value;
-
-                    if (target.classList.contains('favorite-star')) {
-                        e.stopPropagation();
-                        toggleFavorite(airdropId);
-                    } else if (target.classList.contains('edit-btn') && target.closest('.airdrop-header')) {
-                        e.stopPropagation();
-                        editarAirdrop(airdropId);
-                    } else if (target.classList.contains('delete-btn') && target.closest('.airdrop-header')) {
-                        e.stopPropagation();
-                        excluirAirdrop(airdropId);
-                    } else if (target.classList.contains('add-btn') && target.closest('.airdrop-content')) {
-                        e.stopPropagation();
-                        adicionarSubtarefa(airdropId);
-                    } else if (subtaskDiv && target.classList.contains('edit-btn')) {
-                        e.stopPropagation();
-                        const subtaskId = subtaskDiv.getAttribute('data-subtask-id');
-                        editarSubtarefa(airdropId, subtaskId);
-                    } else if (subtaskDiv && target.classList.contains('delete-btn')) {
-                        e.stopPropagation();
-                        const subtaskId = subtaskDiv.getAttribute('data-subtask-id');
-                        excluirSubtarefa(airdropId, subtaskId);
-                    } else if (subtaskDiv && target.textContent === translations[lang].open) {
-                        const subtaskId = subtaskDiv.getAttribute('data-subtask-id');
-                        const airdrop = airdrops.find(a => a.id === airdropId);
-                        const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                        abrirLink(sanitizeInput(subtask.link));
-                    } else if (subtaskDiv && target.textContent === translations[lang].status) {
-                        e.stopPropagation();
-                        const subtaskId = subtaskDiv.getAttribute('data-subtask-id');
-                        marcarConcluido(airdropId, subtaskId);
-                    } else if (target.classList.contains('timer-btn') && target.closest('.subtask')) {
-                        e.stopPropagation();
-                        const subtaskId = target.closest('.subtask').getAttribute('data-subtask-id');
-                        showTimerModal(airdropId, subtaskId);
-                    } else if (target.closest('.airdrop-header') && !target.classList.contains('edit-btn') && !target.classList.contains('delete-btn')) {
-                        toggleAirdrop(airdropId);
-                    }
+        function checkCompleteButton() {
+            const completeButton = document.querySelector('.complete-button');
+            if (tasksCompleted === 4) {
+                completeButton.disabled = false;
+                completeButton.style.opacity = '1';
+                completeButton.style.cursor = 'pointer';
+                completeButton.addEventListener('click', () => {
+                    alert('Tokens MON enviados! (Simulação)');
                 });
             }
-
-            function sanitizeInput(input, maxLength = 100) {
-                if (typeof input !== 'string') return '';
-                return input
-                    .replace(/<script.*?>.*?<\/script>/gi, '')
-                    .replace(/[<>&"']/g, match => ({
-                        '<': '<', '>': '>', '&': '&', '"': '"', "'": "'"
-                    }[match]))
-                    .substring(0, maxLength);
-            }
-
-            function updateLanguage() {
-                const lang = document.getElementById('language-select').value;
-                const t = translations[lang];
-                document.querySelector('h1').textContent = t.title;
-                document.getElementById('add-airdrop-btn').textContent = t.addAirdrop;
-                document.getElementById('export-manual-btn').textContent = t.exportManual;
-                document.getElementById('export-auto-btn').textContent = t.exportAuto;
-                document.getElementById('clear-favorites-btn').textContent = t.clearFavorites;
-                document.getElementById('json-toggle').textContent = t.showJson;
-                document.getElementById('import-btn').textContent = t.importAirdrops;
-                document.getElementById('import-file-btn').textContent = t.importFile;
-                document.getElementById('filter-all-btn').textContent = t.filterAll;
-                document.getElementById('filter-pending-btn').textContent = t.filterPending;
-                document.getElementById('filter-completed-btn').textContent = t.filterCompleted;
-                document.getElementById('toggle-theme-btn').textContent = t.toggleTheme;
-                document.getElementById('reset-manual-btn').textContent = t.resetManual;
-                document.getElementById('undo-reset-btn').textContent = t.undoReset;
-                document.getElementById('search-input').placeholder = t.searchPlaceholder;
-                document.getElementById('import-text').placeholder = t.jsonPlaceholder;
-                document.querySelectorAll('.airdrop-content textarea').forEach(tarea => tarea.placeholder = t.notesPlaceholder);
-                document.getElementById('total-progress').textContent = `${t.totalProgress}: ${document.getElementById('total-progress').textContent.split(': ')[1] || '0%'}`;
-                document.getElementById('footer-toggle').textContent = t.howItWorks;
-                document.getElementById('airdrop-info-toggle').textContent = t.whatIsAirdrop;
-                document.getElementById('why-use-toggle').textContent = t.whyUse;
-                const pendingTasksH3 = document.querySelector('#pending-tasks h3');
-                if (pendingTasksH3) pendingTasksH3.textContent = t.pendingTasks;
-                updateFooterContent(lang);
-            }
-
-            function updateFooterContent(lang) {
-                ['footer-content', 'airdrop-info-content', 'why-use-content'].forEach(id => {
-                    document.querySelectorAll(`#${id}`).forEach(el => {
-                        el.style.display = el.classList.contains(lang) && el.classList.contains('visible') ? 'block' : 'none';
-                    });
-                });
-            }
-
-            function salvarAirdrops() {
-                localStorage.setItem('airdrops', JSON.stringify(airdrops));
-                localStorage.setItem('timerActive', JSON.stringify(timerActive));
-            }
-
-            function calcularProgressoTotal(airdrops) {
-                const totalSubtasks = airdrops.reduce((sum, a) => sum + a.subtarefas.length, 0);
-                const completedSubtasks = airdrops.reduce((sum, a) => sum + a.subtarefas.filter(s => s.status === "Concluído").length, 0);
-                return totalSubtasks > 0 ? (completedSubtasks / totalSubtasks * 100).toFixed(1) : 0;
-            }
-
-            function renderizarPainel() {
-                const airdropsDiv = document.getElementById('airdrops');
-                const lang = document.getElementById('language-select').value;
-                const t = translations[lang];
-                if (!airdropsDiv) return console.error("Elemento #airdrops não encontrado!");
-
-                const openStates = {};
-                document.querySelectorAll('.airdrop-content').forEach(content => {
-                    const id = content.getAttribute('data-airdrop-id');
-                    openStates[id] = content.classList.contains('open');
-                });
-
-                airdropsDiv.innerHTML = '';
-                const filteredAirdrops = airdrops.filter(a => {
-                    const matches = a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        a.subtarefas.some(s => s.texto.toLowerCase().includes(searchQuery.toLowerCase()));
-                    return filterStatus === 'all' ? matches : 
-                           filterStatus === 'pending' ? matches && a.subtarefas.some(s => s.status === "Pendente") :
-                           matches && a.subtarefas.every(s => s.status === "Concluído");
-                });
-
-                filteredAirdrops.sort((a, b) => {
-                    if (a.favorite && !b.favorite) return -1;
-                    if (!a.favorite && b.favorite) return 1;
-                    return 0;
-                });
-
-                filteredAirdrops.forEach((airdrop) => {
-                    const allDone = airdrop.subtarefas.length > 0 && airdrop.subtarefas.every(s => s.status === "Concluído");
-                    const progress = airdrop.subtarefas.length ? (airdrop.subtarefas.filter(s => s.status === "Concluído").length / airdrop.subtarefas.length) * 100 : 0;
-                    const daysOld = Math.floor((new Date() - new Date(airdrop.createdAt)) / (1000 * 60 * 60 * 24));
-                    airdropsDiv.innerHTML += `
-                        <div class="airdrop" data-airdrop-id="${airdrop.id}">
-                            <div class="airdrop-header" data-airdrop-id="${airdrop.id}">
-                                <h2>
-                                    <span class="favorite-star ${airdrop.favorite ? 'active' : ''}">★</span>
-                                    <img src="https://www.google.com/s2/favicons?domain=${sanitizeInput(airdrop.subtarefas[0]?.link || 'https://example.com')}" alt="Icon">
-                                    <span class="${allDone ? 'completed-text' : ''}">${sanitizeInput(airdrop.nome)}</span>
-                                    <span class="age-info">(${daysOld}d)</span>
-                                </h2>
-                                <div>
-                                    <button class="edit-btn">✏️</button>
-                                    <button class="delete-btn">X</button>
-                                </div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress ${allDone ? 'completed' : ''}" style="width: ${progress}%"></div>
-                            </div>
-                            <div id="airdrop-content-${airdrop.id}" class="airdrop-content ${openStates[airdrop.id] ? 'open' : ''}" data-airdrop-id="${airdrop.id}">
-                                <button class="add-btn">${t.addSubtask}</button>
-                                ${airdrop.subtarefas.map(sub => `
-                                    <div class="subtask ${sub.status === 'Concluído' ? 'completed' : ''}" data-subtask-id="${sub.id}">
-                                        <span class="${sub.status === 'Concluído' ? 'completed-text' : ''}">${sanitizeInput(sub.texto)}</span>
-                                        <div class="subtask-buttons">
-                                            <button class="${sub.status === 'Concluído' ? 'status-concluido' : ''}">${t.open}</button>
-                                            <button class="${sub.status === 'Concluído' ? 'status-concluido' : ''}">${t.status}</button>
-                                        </div>
-                                        <div class="subtask-actions">
-                                            <button class="edit-btn">✏️</button>
-                                            <button class="timer-btn" data-subtask-id="${sub.id}">🕒</button>
-                                            <button class="delete-btn">X</button>
-                                        </div>
-                                        <span class="timer-countdown" data-subtask-id="${sub.id}"></span>
-                                    </div>
-                                `).join('')}
-                                <textarea placeholder="${t.notesPlaceholder}" onchange="atualizarNotas('${airdrop.id}', this.value)">${sanitizeInput(airdrop.notes || '')}</textarea>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                salvarAirdrops();
-                atualizarPendingTasks();
-                document.getElementById('total-progress').textContent = `${t.totalProgress}: ${calcularProgressoTotal(filteredAirdrops)}%`;
-                updateTimerDisplay(); // Atualiza os minicrônometros após renderizar
-            }
-
-            function toggleAirdrop(airdropId) {
-                const content = document.getElementById(`airdrop-content-${airdropId}`);
-                if (content) content.classList.toggle('open');
-            }
-
-            function toggleFavorite(airdropId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (airdrop) {
-                    airdrop.favorite = !airdrop.favorite;
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function clearFavorites() {
-                airdrops.forEach(a => a.favorite = false);
-                salvarAirdrops();
-                renderizarPainel();
-            }
-
-            function atualizarNotas(airdropId, value) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (airdrop) {
-                    airdrop.notes = sanitizeInput(value);
-                    salvarAirdrops();
-                }
-            }
-
-            function editarAirdrop(airdropId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const lang = document.getElementById('language-select').value;
-                const novoNome = prompt(translations[lang].subtaskName, airdrop.nome);
-                if (novoNome) {
-                    airdrop.nome = sanitizeInput(novoNome);
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function editarSubtarefa(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const sub = airdrop.subtarefas.find(s => s.id === subtaskId);
-                if (!sub) return;
-                const lang = document.getElementById('language-select').value;
-                const novoTexto = prompt(translations[lang].subtaskName, sub.texto);
-                const novoLink = prompt(translations[lang].subtaskLink, sub.link);
-                if (novoTexto && novoLink) {
-                    sub.texto = sanitizeInput(novoTexto);
-                    sub.link = sanitizeInput(novoLink);
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function toggleJsonArea() {
-                document.getElementById('json-area').classList.toggle('visible');
-            }
-
-            function toggleFooter() {
-                toggleSection('footer-content');
-            }
-
-            function toggleAirdropInfo() {
-                toggleSection('airdrop-info-content');
-            }
-
-            function toggleWhyUse() {
-                toggleSection('why-use-content');
-            }
-
-            function toggleSection(id) {
-                const lang = document.getElementById('language-select').value;
-                document.querySelector(`#${id}.${lang}`).classList.toggle('visible');
-                updateFooterContent(lang);
-            }
-
-            function toggleTheme() {
-                document.body.classList.toggle('light');
-                renderizarPainel(); // Atualiza a interface após a troca de tema
-            }
-
-            function filterAirdrops(status) {
-                filterStatus = status;
-                renderizarPainel();
-            }
-
-            function searchAirdrops() {
-                searchQuery = sanitizeInput(document.getElementById('search-input').value);
-                renderizarPainel();
-            }
-
-            function abrirLink(url) {
-                window.open(url, '_blank');
-            }
-
-            function marcarConcluido(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const sub = airdrop.subtarefas.find(s => s.id === subtaskId);
-                if (!sub) return;
-                sub.status = sub.status === "Pendente" ? "Concluído" : "Pendente";
-                resetTimerForSubtask(airdropId, subtaskId); // Reseta o cronômetro ao mudar o status
-                salvarAirdrops();
-                renderizarPainel();
-            }
-
-            function adicionarAirdrop() {
-                const lang = document.getElementById('language-select').value;
-                const nome = prompt(translations[lang].addAirdrop.replace("+ ", ""));
-                if (nome) {
-                    const newAirdrop = {
-                        id: 'airdrop_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                        nome: sanitizeInput(nome),
-                        subtarefas: [],
-                        favorite: false,
-                        notes: "",
-                        createdAt: new Date().toISOString()
-                    };
-                    airdrops.push(newAirdrop);
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function adicionarSubtarefa(airdropId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const lang = document.getElementById('language-select').value;
-                const texto = prompt(translations[lang].subtaskName);
-                const link = prompt(translations[lang].subtaskLink);
-                if (texto && link) {
-                    airdrop.subtarefas.push({
-                        id: 'sub_' + Date.now() + Math.random().toString(36).substr(2, 9),
-                        texto: sanitizeInput(texto),
-                        link: sanitizeInput(link),
-                        status: "Pendente",
-                        alertInterval: 0, // Padrão: desativado
-                        lastAlert: null // Para rastrear o último alerta
-                    });
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function excluirAirdrop(airdropId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const lang = document.getElementById('language-select').value;
-                if (confirm(`${translations[lang].deleteConfirm} "${sanitizeInput(airdrop.nome)}"?`)) {
-                    airdrops = airdrops.filter(a => a.id !== airdropId);
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function excluirSubtarefa(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                if (!subtask) return;
-                const lang = document.getElementById('language-select').value;
-                if (confirm(`${translations[lang].deleteConfirm} a subtarefa "${sanitizeInput(subtask.texto)}"?`)) {
-                    airdrop.subtarefas = airdrop.subtarefas.filter(s => s.id !== subtaskId);
-                    salvarAirdrops();
-                    renderizarPainel();
-                }
-            }
-
-            function exportarAirdrops() {
-                const lang = document.getElementById('language-select').value;
-                document.getElementById('import-text').value = JSON.stringify(airdrops, null, 2);
-                alert(translations[lang].exportManualAlert);
-            }
-
-            function exportarAirdropsAuto() {
-                const lang = document.getElementById('language-select').value;
-                const blob = new Blob([JSON.stringify(airdrops, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'airdrops.json';
-                a.click();
-                URL.revokeObjectURL(a.href);
-                alert(translations[lang].exportAutoAlert);
-            }
-
-            function importarAirdrops() {
-                const lang = document.getElementById('language-select').value;
-                try {
-                    airdrops = JSON.parse(document.getElementById('import-text').value);
-                    airdrops.forEach(airdrop => {
-                        if (!airdrop.id) airdrop.id = 'airdrop_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                        airdrop.subtarefas.forEach(sub => {
-                            if (!sub.id) sub.id = 'sub_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                            if (!sub.alertInterval) sub.alertInterval = 0;
-                            if (!sub.lastAlert) sub.lastAlert = null;
-                        });
-                    });
-                    salvarAirdrops();
-                    renderizarPainel();
-                    alert(translations[lang].importSuccessAlert);
-                } catch (e) {
-                    alert(translations[lang].importInvalidAlert);
-                    console.error("Erro no import:", e);
-                }
-            }
-
-            function importarArquivo() {
-                const lang = document.getElementById('language-select').value;
-                const file = document.getElementById('json-file-input').files[0];
-                if (!file) return alert(translations[lang].importFileSelectAlert);
-                const reader = new FileReader();
-                reader.onload = e => {
-                    try {
-                        airdrops = JSON.parse(e.target.result);
-                        airdrops.forEach(airdrop => {
-                            if (!airdrop.id) airdrop.id = 'airdrop_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                            airdrop.subtarefas.forEach(sub => {
-                                if (!sub.id) sub.id = 'sub_' + Date.now() + Math.random().toString(36).substr(2, 9);
-                                if (!sub.alertInterval) sub.alertInterval = 0;
-                                if (!sub.lastAlert) sub.lastAlert = null;
-                            });
-                        });
-                        salvarAirdrops();
-                        renderizarPainel();
-                        alert(translations[lang].importFileSuccessAlert);
-                    } catch (err) {
-                        alert(translations[lang].importFileInvalidAlert);
-                        console.error("Erro no import de arquivo:", err);
-                    }
-                };
-                reader.readAsText(file);
-            }
-
-            function resetarManual() {
-                const lang = document.getElementById('language-select').value;
-                backupAirdrops = JSON.parse(JSON.stringify(airdrops));
-                airdrops.forEach(a => a.subtarefas.forEach(s => {
-                    s.status = "Pendente";
-                    s.lastAlert = null; // Reseta alertas ao resetar manualmente
-                }));
-                salvarAirdrops();
-                renderizarPainel();
-                alert(translations[lang].resetManualAlert);
-            }
-
-            function desfazerReset() {
-                const lang = document.getElementById('language-select').value;
-                if (backupAirdrops) {
-                    airdrops = JSON.parse(JSON.stringify(backupAirdrops));
-                    salvarAirdrops();
-                    renderizarPainel();
-                    alert(translations[lang].undoResetAlert);
-                    backupAirdrops = null;
-                } else {
-                    alert(translations[lang].noUndoAvailable);
-                }
-            }
-
-            function atualizarCriptoPrecos() {
-                fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1')
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('crypto-bar').innerHTML = `<div class="crypto-ticker">${data.map(coin => `
-                            <span class="crypto-item">
-                                <img src="${sanitizeInput(coin.image)}" alt="${sanitizeInput(coin.name)}">
-                                ${sanitizeInput(coin.symbol.toUpperCase())}: $${coin.current_price}
-                            </span>
-                        `).join('')}</div>`;
-                    })
-                    .catch(err => {
-                        console.error("Erro ao carregar cotações:", err);
-                        document.getElementById('crypto-bar').textContent = 'Erro ao carregar cotações';
-                    });
-            }
-
-            function atualizarPendingTasks() {
-                const lang = document.getElementById('language-select').value;
-                const agora = new Date();
-                const ontem = new Date(agora.setDate(agora.getDate() - 1));
-                const lastReset = lastResetDate ? new Date(lastResetDate) : null;
-
-                if (!lastReset || lastReset < ontem) {
-                    const pendentes = airdrops.flatMap(a => a.subtarefas.filter(s => s.status === "Pendente").map(s => `${sanitizeInput(a.nome)}: ${sanitizeInput(s.texto)}`));
-                    document.getElementById('pending-tasks').innerHTML = pendentes.length ? `
-                        <h3>${translations[lang].pendingTasks}:</h3>
-                        <ul>${pendentes.map(task => `<li>${task}</li>`).join('')}</ul>
-                    ` : '';
-                } else {
-                    document.getElementById('pending-tasks').innerHTML = '';
-                }
-            }
-
-            function atualizarDataHora() {
-                const lang = document.getElementById('language-select').value;
-                const agora = new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' });
-                const agoraSP = new Date(agora);
-                document.getElementById('datetime').textContent = agoraSP.toLocaleString('pt-BR');
-
-                if (agoraSP.getHours() === 20 && agoraSP.getMinutes() === 0 && agoraSP.getSeconds() === 0) {
-                    if (airdrops.some(a => a.subtarefas.some(s => s.status === "Pendente"))) {
-                        alert(translations[lang].warningAlert);
-                    }
-                }
-                if (agoraSP.getHours() === 21 && agoraSP.getMinutes() === 0 && agoraSP.getSeconds() === 0) {
-                    airdrops.forEach(a => a.subtarefas.forEach(s => {
-                        s.status = "Pendente";
-                        s.lastAlert = null; // Reseta alertas no reset diário
-                    }));
-                    localStorage.setItem('lastResetDate', agoraSP.toISOString());
-                    lastResetDate = agoraSP.toISOString();
-                    renderizarPainel();
-                    alert(translations[lang].resetAlert);
-                }
-                atualizarPendingTasks();
-            }
-
-            function showTimerModal(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                if (!subtask) return;
-
-                const modal = document.createElement('div');
-                modal.className = 'timer-modal';
-                modal.innerHTML = `
-                    <p>Definir intervalo (minutos):</p>
-                    <input type="number" id="timer-input-${subtaskId}" value="${subtask.alertInterval}" min="0" placeholder="0 (desativado)">
-                    <button onclick="setTimer('${airdropId}', '${subtaskId}'); this.parentElement.remove()">Salvar</button>
-                `;
-                const timerBtn = document.querySelector(`.timer-btn[data-subtask-id="${subtaskId}"]`);
-                if (timerBtn) timerBtn.appendChild(modal);
-                modal.style.display = 'block';
-
-                document.getElementById(`timer-input-${subtaskId}`).focus();
-            }
-
-            function setTimer(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (!airdrop) return;
-                const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                if (!subtask) return;
-
-                const interval = parseInt(document.getElementById(`timer-input-${subtaskId}`).value) || 0;
-                subtask.alertInterval = interval;
-                subtask.lastAlert = null; // Reseta o último alerta ao mudar o intervalo
-                salvarAirdrops();
-                renderizarPainel();
-            }
-
-            function toggleTimer() {
-                timerActive = !timerActive;
-                const timerBtn = document.getElementById('timer-toggle');
-                timerBtn.textContent = `⏱️ ${timerActive ? 'On' : 'Off'}`;
-                timerBtn.style.color = timerActive ? '#00A3FF' : '#444444';
-                salvarAirdrops();
-                updateTimerDisplay();
-                if (timerActive) startTimerCheck();
-                else stopTimerCheck();
-            }
-
-            function startTimerCheck() {
-                stopTimerCheck(); // Garante que só um intervalo esteja ativo
-                timerInterval = setInterval(checkTimers, 30000); // Verifica a cada 30 segundos
-            }
-
-            function stopTimerCheck() {
-                if (timerInterval) clearInterval(timerInterval);
-            }
-
-            let timerInterval;
-
-            function checkTimers() {
-                if (!timerActive) return;
-                const now = new Date().getTime();
-                const lang = document.getElementById('language-select').value;
-
-                airdrops.forEach(airdrop => {
-                    airdrop.subtarefas.forEach(sub => {
-                        if (sub.status === "Pendente" && sub.alertInterval > 0) {
-                            const intervalMs = sub.alertInterval * 60000; // Converte minutos para milissegundos
-                            const lastAlert = sub.lastAlert ? new Date(sub.lastAlert).getTime() : 0;
-                            if (now - lastAlert >= intervalMs) {
-                                showNotification(`${sanitizeInput(airdrop.nome)}: ${sanitizeInput(sub.texto)}`, lang);
-                                playAlertSound();
-                                sub.lastAlert = new Date().toISOString();
-                                salvarAirdrops();
-                            }
-                        }
-                    });
-                });
-                updateTimerDisplay();
-            }
-
-            function updateTimerDisplay() {
-                if (!timerActive) {
-                    document.querySelectorAll('.timer-countdown').forEach(countdown => countdown.textContent = '');
-                    return;
-                }
-                const now = new Date().getTime();
-                document.querySelectorAll('.timer-countdown').forEach(countdown => {
-                    const subtaskId = countdown.getAttribute('data-subtask-id');
-                    const airdrop = airdrops.find(a => a.subtarefas.some(s => s.id === subtaskId));
-                    if (airdrop) {
-                        const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                        if (subtask && subtask.status === "Pendente" && subtask.alertInterval > 0) {
-                            const lastAlert = subtask.lastAlert ? new Date(subtask.lastAlert).getTime() : 0;
-                            const remainingMs = (subtask.alertInterval * 60000) - (now - lastAlert);
-                            if (remainingMs > 0) {
-                                const minutes = Math.floor(remainingMs / 60000);
-                                const seconds = Math.floor((remainingMs % 60000) / 1000);
-                                countdown.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                            } else {
-                                countdown.textContent = '0:00';
-                            }
-                        } else {
-                            countdown.textContent = '';
-                        }
-                    }
-                });
-            }
-
-            function resetTimerForSubtask(airdropId, subtaskId) {
-                const airdrop = airdrops.find(a => a.id === airdropId);
-                if (airdrop) {
-                    const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
-                    if (subtask) {
-                        subtask.lastAlert = null;
-                        salvarAirdrops();
-                    }
-                }
-            }
-
-            function playAlertSound() {
-                const sound = document.getElementById('alert-sound');
-                sound.play().catch(err => console.error("Erro ao tocar som:", err));
-            }
-
-            function showNotification(message, lang) {
-                const notification = document.getElementById('notification');
-                notification.textContent = message;
-                notification.innerHTML += `<button onclick="this.parentElement.style.display = 'none'">X</button>`;
-                notification.style.display = 'block';
-                setTimeout(() => notification.style.display = 'none', 10000); // Desaparece após 10 segundos
-            }
-
-            document.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('wallet-modal').style.display = 'block';
-                document.getElementById('overlay').style.display = 'block';
-                document.getElementById('connect-metamask').onclick = conectarWallet;
-                const timerBtn = document.getElementById('timer-toggle');
-                timerBtn.textContent = `⏱️ ${timerActive ? 'On' : 'Off'}`;
-                timerBtn.style.color = timerActive ? '#00A3FF' : '#444444';
-            });
-        })();
+        }
     </script>
-</body>
-</html>
+    const express = require('express');
+    const ethers = require('ethers');
+    const axios = require('axios'); // Para verificar tarefas sociais (ex.: Twitter, Telegram)
+    const app = express();
+    
+    app.use(express.json());
+    app.use(express.static('public')); // Servir os arquivos HTML/CSS da Parte 1
+    
+    // Configurar o provedor RPC da Monad Testnet
+    const provider = new ethers.providers.JsonRpcProvider('https://testnet-rpc.monad.xyz/');
+    const privateKey = 'SEU_PRIVATE_KEY_AQUI'; // Substitua por uma chave privada segura para a carteira faucet
+    const wallet = new ethers.Wallet(privateKey, provider);
+    
+    // Endereço da carteira com tokens MON de teste
+    const faucetAddress = '0x...'; // Substitua pelo endereço da carteira que possui tokens MON (ex.: 0x4050feb951B8d87C030959766f636BF93f5Ebca2)
+    
+    // Configurações da faucet
+    const TOKENS_PER_REQUEST = ethers.utils.parseEther('0.05'); // 0.05 MON por solicitação
+    const DAILY_LIMIT = 1; // Limite de 1 solicitação por endereço por dia
+    const TASKS_REQUIRED = 4; // Número de tarefas para desbloquear tokens
+    
+    // Armazenamento simples em memória (substitua por um banco de dados em produção, como MongoDB ou Redis)
+    let requestHistory = new Map(); // { endereço: { lastRequest: timestamp, requestsToday: count } }
+    
+    // Função para verificar o limite diário
+    function checkDailyLimit(address) {
+        const now = Date.now();
+        const record = requestHistory.get(address) || { lastRequest: 0, requestsToday: 0 };
+        
+        // Reinicia o contador se passou mais de 24 horas desde a última solicitação
+        if (now - record.lastRequest > 24 * 60 * 60 * 1000) {
+            record.lastRequest = now;
+            record.requestsToday = 0;
+        }
+    
+        if (record.requestsToday >= DAILY_LIMIT) {
+            return false;
+        }
+        return true;
+    }
+    
+    // Função para verificar tarefas sociais (simplificada; ajuste para APIs reais de Twitter/Telegram)
+    async function verifyTasks(address, tasks) {
+        // Exemplo simulado: verifica se todas as tarefas foram marcadas como completas
+        if (tasks.length !== TASKS_REQUIRED) {
+            return { success: false, message: 'Complete todas as 4 tarefas.' };
+        }
+    
+        // Simulação de verificação (substitua por APIs reais, como Twitter API v2 ou Telegram Bot API)
+        for (const task of tasks) {
+            if (!task.completed) {
+                return { success: false, message: `Tarefa pendente: ${task.name}` };
+            }
+        }
+    
+        // Verificar se o endereço está conectado à Monad Testnet (simplificado)
+        try {
+            const balance = await provider.getBalance(address);
+            if (balance.eq(0)) {
+                return { success: false, message: 'Conecte sua carteira à Monad Testnet.' };
+            }
+        } catch (error) {
+            return { success: false, message: 'Endereço de carteira inválido.' };
+        }
+    
+        return { success: true, message: 'Tarefas verificadas com sucesso!' };
+    }
+    
+    // Rota para distribuir tokens
+    app.post('/api/faucet', async (req, res) => {
+        const { address, tasks } = req.body; // tasks é um array com { name: 'taskName', completed: true/false }
+    
+        // Verificar endereço e limite diário
+        if (!ethers.utils.isAddress(address)) {
+            return res.json({ success: false, message: 'Endereço de carteira inválido.' });
+        }
+    
+        if (!checkDailyLimit(address)) {
+            return res.json({ success: false, message: 'Limite diário atingido. Tente novamente em 24 horas.' });
+        }
+    
+        // Verificar tarefas sociais
+        const taskResult = await verifyTasks(address, tasks);
+        if (!taskResult.success) {
+            return res.json(taskResult);
+        }
+    
+        try {
+            // Enviar tokens MON para o endereço
+            const tx = await wallet.sendTransaction({
+                to: address,
+                value: TOKENS_PER_REQUEST
+            });
+    
+            await tx.wait();
+    
+            // Atualizar histórico de solicitações
+            const record = requestHistory.get(address) || { lastRequest: Date.now(), requestsToday: 0 };
+            record.requestsToday++;
+            requestHistory.set(address, record);
+    
+            res.json({ 
+                success: true, 
+                message: 'Tokens MON enviados com sucesso! 0.05 MON para ' + address,
+                txHash: tx.hash 
+            });
+        } catch (error) {
+            res.json({ success: false, message: 'Erro ao enviar tokens: ' + error.message });
+        }
+    });
+    
+    // Rota para verificar status (opcional, para atualizar a UI)
+    app.get('/api/status', (req, res) => {
+        const address = req.query.address;
+        if (!address || !ethers.utils.isAddress(address)) {
+            return res.json({ available: '0.00 MON', network: 'Monad Testnet', contract: '0x4050...bca2' });
+        }
+    
+        res.json({ 
+            available: '0.00 MON', // Atualize com lógica real para saldo disponível
+            network: 'Monad Testnet',
+            contract: '0x4050feb951B8d87C030959766f636BF93f5Ebca2'
+        });
+    });
+    
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => console.log(`Faucet rodando na porta ${PORT}`));
+    
