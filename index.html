@@ -358,7 +358,7 @@
             blockExplorerUrls: ['https://monad-explorer.testnet.caldera.xyz']
         };
 
-        let walletConnected = false;
+        let walletConnected = localStorage.getItem('walletConnected') === 'true';
         let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
         const taskButtons = document.querySelectorAll('.task-button');
         const claimButton = document.getElementById('claimButton');
@@ -393,7 +393,7 @@
             }
             try {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
+                const accounts = await provider.send("eth_requestAccounts", []);
                 const network = await provider.getNetwork();
                 if (network.chainId !== 10143) {
                     try {
@@ -413,6 +413,7 @@
                     }
                 }
                 walletConnected = true;
+                localStorage.setItem('walletConnected', 'true');
                 const signer = provider.getSigner();
                 const address = await signer.getAddress();
                 walletAddress.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -432,8 +433,9 @@
 
         disconnectWallet.addEventListener('click', () => {
             walletConnected = false;
-            tasksCompleted = { connectWallet: false, followX: false, likePost: false };
+            localStorage.setItem('walletConnected', 'false');
             walletInfo.style.display = 'none';
+            tasksCompleted = { connectWallet: false, followX: false, likePost: false };
             updateTaskButtons();
             claimButton.disabled = true;
             claimButton.classList.remove('enabled');
@@ -472,17 +474,17 @@
 
         async function updateContractInfo() {
             try {
-                const provider = window.ethereum ?
+                const provider = window.ethereum && walletConnected ?
                     new ethers.providers.Web3Provider(window.ethereum) :
                     new ethers.providers.JsonRpcProvider(MONAD_TESTNET.rpcUrls[0]);
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
                 const balance = await contract.getBalance();
-                const cachedClaim = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
-                const cachedCooldown = localStorage.getItem('cooldownPeriod') || (await contract.COOLDOWN_PERIOD()).toString();
-                localStorage.setItem('claimAmount', cachedClaim);
-                localStorage.setItem('cooldownPeriod', cachedCooldown);
+                const cachedClaim = ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                const cachedCooldown = (await contract.COOLDOWN_PERIOD()).toString();
+                localStorage.setItem('claimAmount', '0.01'); // Fixado em 0.01 para testes
+                localStorage.setItem('cooldownPeriod', '60'); // Fixado em 60s para testes
                 available.textContent = ethers.utils.formatEther(balance) + ' MON';
-                claimAmount.textContent = cachedClaim + ' MON';
+                claimAmount.textContent = '0.01 MON';
             } catch (error) {
                 console.error('Error fetching contract info:', error);
                 available.textContent = 'Error';
@@ -504,7 +506,7 @@
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                 const address = await signer.getAddress();
                 const lastClaimTime = await contract.lastClaim(address);
-                const cooldown = parseInt(localStorage.getItem('cooldownPeriod') || await contract.COOLDOWN_PERIOD());
+                const cooldown = parseInt(localStorage.getItem('cooldownPeriod') || '60');
                 const now = Math.floor(Date.now() / 1000);
 
                 if (lastClaimTime.toNumber() > 0) {
@@ -522,7 +524,7 @@
                     claimButton.classList.remove('enabled');
                     status.textContent = 'Complete all tasks to claim tokens.';
                 } else {
-                    const claimAmt = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                    const claimAmt = localStorage.getItem('claimAmount') || '0.01';
                     claimButtonText.textContent = `Claim ${claimAmt} MON`;
                     claimButton.disabled = false;
                     claimButton.classList.add('enabled');
@@ -596,9 +598,28 @@
 
         claimButton.addEventListener('click', claimTokens);
         document.getElementById('copyContractBtn').addEventListener('click', copyContractAddress);
+
         window.addEventListener('load', () => {
             updateContractInfo();
-            checkClaimStatus();
+            if (walletConnected && window.ethereum) {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                provider.listAccounts().then(accounts => {
+                    if (accounts.length > 0) {
+                        walletAddress.textContent = `${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`;
+                        walletInfo.style.display = 'flex';
+                        tasksCompleted.connectWallet = true;
+                        updateTaskButtons();
+                        checkClaimStatus();
+                        status.textContent = 'Wallet connected! Complete tasks to claim.';
+                    } else {
+                        walletConnected = false;
+                        localStorage.setItem('walletConnected', 'false');
+                        checkClaimStatus();
+                    }
+                });
+            } else {
+                checkClaimStatus();
+            }
         });
 
         // Animação de partículas no canvas
