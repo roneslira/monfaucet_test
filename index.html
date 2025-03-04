@@ -618,7 +618,7 @@
                 document.getElementById('undo-reset-btn').textContent = t.undoReset;
                 document.getElementById('search-input').placeholder = t.searchPlaceholder;
                 document.getElementById('import-text').placeholder = t.jsonPlaceholder;
-                document.querySelectorAll('.airdrop-content textarea').forEach(tarea => tarefa.placeholder = t.notesPlaceholder);
+                document.querySelectorAll('.airdrop-content textarea').forEach(tarea => tarea.placeholder = t.notesPlaceholder);
                 document.getElementById('total-progress').textContent = `${t.totalProgress}: ${document.getElementById('total-progress').textContent.split(': ')[1] || '0%'}`;
                 document.getElementById('footer-toggle').textContent = t.howItWorks;
                 document.getElementById('airdrop-info-toggle').textContent = t.whatIsAirdrop;
@@ -1052,14 +1052,14 @@
                 modal.className = 'timer-modal';
                 modal.innerHTML = `
                     <p>Definir intervalo (minutos):</p>
-                    <input type="number" id="timer-input" value="${subtask.alertInterval}" min="0" placeholder="0 (desativado)">
+                    <input type="number" id="timer-input-${subtaskId}" value="${subtask.alertInterval}" min="0" placeholder="0 (desativado)">
                     <button onclick="setTimer('${airdropId}', '${subtaskId}'); this.parentElement.remove()">Salvar</button>
                 `;
                 const timerBtn = document.querySelector(`.timer-btn[data-subtask-id="${subtaskId}"]`);
                 if (timerBtn) timerBtn.appendChild(modal);
                 modal.style.display = 'block';
 
-                document.getElementById('timer-input').focus();
+                document.getElementById(`timer-input-${subtaskId}`).focus();
             }
 
             function setTimer(airdropId, subtaskId) {
@@ -1068,7 +1068,7 @@
                 const subtask = airdrop.subtarefas.find(s => s.id === subtaskId);
                 if (!subtask) return;
 
-                const interval = parseInt(document.getElementById('timer-input').value) || 0;
+                const interval = parseInt(document.getElementById(`timer-input-${subtaskId}`).value) || 0;
                 subtask.alertInterval = interval;
                 subtask.lastAlert = null; // Reseta o último alerta ao mudar o intervalo
                 salvarAirdrops();
@@ -1078,6 +1078,7 @@
             function toggleTimer() {
                 timerActive = !timerActive;
                 const timerBtn = document.getElementById('timer-toggle');
+                timerBtn.textContent = `⏱️ ${timerActive ? 'On' : 'Off'}`;
                 timerBtn.style.color = timerActive ? '#00A3FF' : '#444444';
                 salvarAirdrops();
                 updateTimerDisplay();
@@ -1175,6 +1176,7 @@
                 document.getElementById('overlay').style.display = 'block';
                 document.getElementById('connect-metamask').onclick = conectarWallet;
                 const timerBtn = document.getElementById('timer-toggle');
+                timerBtn.textContent = `⏱️ ${timerActive ? 'On' : 'Off'}`;
                 timerBtn.style.color = timerActive ? '#00A3FF' : '#444444';
             });
         })();
