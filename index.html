@@ -6,7 +6,7 @@
     <title>MonFaucet</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" defer>
     <style>
-        /* Bloco Editável: Configurações Gerais */
+        /* Configurações Gerais */
         :root {
             --background-start: #000000;
             --background-end: #0F1419;
@@ -20,20 +20,6 @@
             --button-hover: #00D4FF;
             --disabled-opacity: 0.5;
             --font-family: 'Poppins', 'Montserrat', Arial, sans-serif;
-            --title: "MonFaucet";
-            --description: "Reclame tokens MON da Monad Testnet";
-            --available-text: "Disponível";
-            --network-text: "Rede";
-            --contract-text: "Contrato";
-            --claim-text: "Reclamar Tokens";
-            --status-text: "Conecte sua carteira para reclamar tokens.";
-            --contract-address: "https://testnet.monadexplorer.com/address/0x1EB75153aF33AD33841565D2E11478787D863123";
-            --contract-address-short: "0x1EB75153...D863123";
-            --social-links: '{"followX": "https://twitter.com/MonFaucet", "likePost": "https://twitter.com/MonFaucet/status/123456789", "joinTelegram": "https://t.me/MonFaucetGroup"}';
-            --banner-left-url: "https://example.com/banner-left.jpg";
-            --banner-right-url: "https://example.com/banner-right.jpg";
-            --banner-width: 200px;
-            --banner-height: 300px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,17 +45,17 @@
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
         .banner {
             position: absolute;
-            width: var(--banner-width);
-            height: var(--banner-height);
-            z-index: 15; /* Acima da faucet (z-index: 10) */
+            width: 200px;
+            height: 300px;
+            z-index: 15;
             border: 2px dashed var(--box-border);
             padding: 5px;
             background: var(--box-background);
             box-shadow: 0 4px 12px var(--shadow-color);
             transition: all 0.3s ease-in-out;
         }
-        .banner-left { left: calc(50% - 320px); top: calc(50% - 200px); } /* Centralizado acima da faucet */
-        .banner-right { right: calc(50% - 320px); top: calc(50% + 100px); } /* Centralizado abaixo da faucet */
+        .banner-left { left: calc(50% - 320px); top: calc(50% - 200px); }
+        .banner-right { right: calc(50% - 320px); top: calc(50% + 100px); }
         .banner::after {
             content: 'Banner 200px x 300px';
             position: absolute;
@@ -84,21 +70,21 @@
             position: relative;
             z-index: 10;
             width: 100%;
-            max-width: 24rem; /* Reduzido para compactar */
-            padding: 1.5rem; /* Reduzido para compactar */
+            max-width: 24rem;
+            padding: 1.5rem;
             background: var(--box-background);
             backdrop-filter: blur(20px);
-            border-radius: 1rem; /* Bordas menores */
+            border-radius: 1rem;
             border: 1px solid var(--box-border);
-            box-shadow: 0 8px 16px var(--shadow-color); /* Sombra mais leve */
-            margin: 0.5rem auto; /* Margem reduzida */
+            box-shadow: 0 8px 16px var(--shadow-color);
+            margin: 0.5rem auto;
         }
         .faucet-title {
-            font-size: 2.8rem; /* Reduzido para compactar */
+            font-size: 2.8rem;
             font-weight: bold;
             color: var(--primary-color);
             text-shadow: 0 1px 6px rgba(0, 122, 255, 0.4);
-            margin-bottom: 1rem; /* Reduzido */
+            margin-bottom: 1rem;
             font-family: 'Arial Black', sans-serif;
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
@@ -107,8 +93,8 @@
         }
         .faucet-container p {
             color: var(--text-color);
-            font-size: 1rem; /* Reduzido */
-            margin-bottom: 1.5rem; /* Reduzido */
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
             opacity: 0.9;
         }
         .task-button, .claim-button {
@@ -116,13 +102,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem; /* Reduzido */
-            margin-bottom: 0.6rem; /* Reduzido */
+            padding: 1rem;
+            margin-bottom: 0.6rem;
             background: var(--box-background);
-            border-radius: 0.75rem; /* Bordas menores */
+            border-radius: 0.75rem;
             color: var(--text-color);
             border: 1px solid var(--box-border);
-            box-shadow: 0 3px 10px var(--shadow-color); /* Sombra mais leve */
+            box-shadow: 0 3px 10px var(--shadow-color);
             font-weight: bold;
             transition: all 0.4s ease-in-out;
             cursor: pointer;
@@ -139,29 +125,29 @@
             box-shadow: 0 6px 18px var(--shadow-color);
         }
         .task-button:active, .claim-button:active { transform: scale(0.98) rotate(0); }
-        .task-button .icon, .claim-button .icon { font-size: 1.2rem; margin-right: 0.4rem; } /* Reduzido */
+        .task-button .icon, .claim-button .icon { font-size: 1.2rem; margin-right: 0.4rem; }
         .task-button .arrow, .claim-button .arrow { color: var(--text-color); }
         .claim-button {
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             color: var(--text-color);
             opacity: var(--disabled-opacity);
             cursor: not-allowed;
-            font-size: 1rem; /* Reduzido */
+            font-size: 1rem;
         }
         .claim-button.enabled { opacity: 1; cursor: pointer; }
         .info-box {
             background: var(--box-background);
             border-radius: 0.75rem;
-            padding: 1rem; /* Reduzido */
-            margin-bottom: 1.2rem; /* Reduzido */
+            padding: 1rem;
+            margin-bottom: 1.2rem;
             box-shadow: 0 4px 12px var(--shadow-color);
         }
         .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-        .info-box span { color: var(--text-color); font-size: 0.9rem; } /* Reduzido */
+        .info-box span { color: var(--text-color); font-size: 0.9rem; }
         .info-box a { color: var(--primary-color); text-decoration: none; }
         .status {
             color: var(--text-color);
-            font-size: 0.9rem; /* Reduzido */
+            font-size: 0.9rem;
             margin-top: 1rem;
             opacity: 0.8;
             animation: fadeIn 0.5s ease-in;
@@ -173,7 +159,7 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: var(--box-background);
-            padding: 1.5rem; /* Reduzido */
+            padding: 1.5rem;
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 10px 20px var(--shadow-color);
@@ -184,18 +170,18 @@
             from { opacity: 0; transform: translate(-50%, -60%); }
             to { opacity: 1; transform: translate(-50%, -50%); }
         }
-        .modal-content { color: var(--text-color); font-size: 1rem; } /* Reduzido */
+        .modal-content { color: var(--text-color); font-size: 1rem; }
         .modal-buttons {
             margin-top: 1rem;
             display: flex;
-            gap: 0.8rem; /* Reduzido */
+            gap: 0.8rem;
             justify-content: center;
         }
         .modal-button {
             background: var(--primary-color);
             color: var(--text-color);
-            padding: 0.5rem 1rem; /* Reduzido */
-            border-radius: 0.7rem; /* Bordas menores */
+            padding: 0.5rem 1rem;
+            border-radius: 0.7rem;
             cursor: pointer;
             border: 1px solid var(--box-border);
             box-shadow: 0 3px 10px var(--shadow-color);
@@ -217,7 +203,7 @@
         .decorative-blur {
             position: absolute;
             border-radius: 50%;
-            filter: blur(2.5rem) brightness(1.2); /* Reduzido blur para performance */
+            filter: blur(2.5rem) brightness(1.2);
             pointer-events: none;
             animation: pulse 4s infinite ease-in-out;
         }
@@ -226,13 +212,13 @@
             50% { opacity: 0.4; }
             100% { opacity: 0.2; }
         }
-        .blur-1 { top: 25%; left: 25%; width: 14rem; height: 14rem; background: rgba(0, 122, 255, 0.2); } /* Reduzido */
-        .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); } /* Reduzido */
+        .blur-1 { top: 25%; left: 25%; width: 14rem; height: 14rem; background: rgba(0, 122, 255, 0.2); }
+        .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); }
         .logo-watermark {
             position: fixed;
-            bottom: 15px; /* Reduzido */
-            right: 15px; /* Reduzido */
-            font-size: 0.9rem; /* Reduzido */
+            bottom: 15px;
+            right: 15px;
+            font-size: 0.9rem;
             color: var(--text-color);
             opacity: 0.1;
             font-family: var(--font-family);
@@ -244,17 +230,17 @@
         }
         footer {
             position: fixed;
-            bottom: 5px; /* Reduzido */
+            bottom: 5px;
             width: 100%;
             text-align: center;
-            font-size: 0.7rem; /* Reduzido */
+            font-size: 0.7rem;
             color: var(--text-color);
             opacity: 0.7;
         }
         footer a {
             color: var(--primary-color);
             text-decoration: none;
-            margin: 0 0.4rem; /* Reduzido */
+            margin: 0 0.4rem;
             transition: color 0.3s ease;
         }
         footer a:hover { color: var(--secondary-color); }
@@ -265,27 +251,27 @@
                 position: absolute;
                 width: 100%;
                 height: auto;
-                max-width: var(--banner-width);
+                max-width: 200px;
                 top: auto;
                 left: 50%;
                 transform: translateX(-50%);
             }
-            .banner-left { top: 10px; } /* Reduzido */
-            .banner-right { bottom: 10px; top: auto; } /* Reduzido */
-            .faucet-container { max-width: 90%; margin-top: 1rem; padding: 1rem; } /* Reduzido */
-            .faucet-title { font-size: 2rem; } /* Reduzido */
-            .task-button, .claim-button { padding: 0.8rem; } /* Reduzido */
+            .banner-left { top: 10px; }
+            .banner-right { bottom: 10px; top: auto; }
+            .faucet-container { max-width: 90%; margin-top: 1rem; padding: 1rem; }
+            .faucet-title { font-size: 2rem; }
+            .task-button, .claim-button { padding: 0.8rem; }
         }
     </style>
 </head>
 <body>
     <div class="main-content">
         <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
-        <img src="var(--banner-left-url)" alt="Banner Esquerdo" class="banner banner-left">
-        <img src="var(--banner-right-url)" alt="Banner Direito" class="banner banner-right">
+        <img src="https://example.com/banner-left.jpg" alt="Banner Esquerdo" class="banner banner-left">
+        <img src="https://example.com/banner-right.jpg" alt="Banner Direito" class="banner banner-right">
         <div class="faucet-container">
-            <div class="faucet-title">[Título será preenchido via JS]</div>
-            <p>[Descrição será preenchido via JS]</p>
+            <div class="faucet-title">MonFaucet</div>
+            <p>Reclame tokens MON da Monad Testnet</p>
             <div class="task-buttons" id="taskButtons">
                 <button class="task-button" id="connectWalletButton" title="Conecte sua carteira MetaMask para continuar">
                     <div class="flex items-center gap-3">
@@ -317,19 +303,19 @@
                 </button>
             </div>
             <div class="info-box" id="infoBox">
-                <div><span>[Disponível será preenchido via JS]</span><span id="available">0.00 MON</span></div>
-                <div><span>[Rede será preenchido via JS]</span><span>Monad Testnet</span></div>
+                <div><span>Disponível</span><span id="available">0.00 MON</span></div>
+                <div><span>Rede</span><span>Monad Testnet</span></div>
                 <div>
-                    <span>[Contrato será preenchido via JS]</span>
+                    <span>Contrato</span>
                     <span class="flex items-center">
-                        <a href="[Link do contrato será preenchido via JS]" target="_blank" rel="noopener noreferrer">
-                            [Endereço curto do contrato será preenchido via JS]
+                        <a href="https://testnet.monadexplorer.com/address/0x1EB75153aF33AD33841565D2E11478787D863123" target="_blank" rel="noopener noreferrer">
+                            0x1EB75153...D863123
                         </a>
                     </span>
                 </div>
             </div>
-            <button class="claim-button" id="claimButton" disabled>[Reclamar Tokens será preenchido via JS]</button>
-            <div class="status" id="status">[Status será preenchido via JS]</div>
+            <button class="claim-button" id="claimButton" disabled>Reclamar Tokens</button>
+            <div class="status" id="status">Conecte sua carteira para reclamar tokens.</div>
         </div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
@@ -348,81 +334,47 @@
     </div>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" integrity="sha384-..." crossorigin="anonymous" defer></script>
     <script defer>
-        // Esperar o DOM e todos os recursos estarem carregados com fallback
+        // Esperar o DOM e todos os recursos estarem carregados
         window.onload = function() {
-            // Função para obter valores das variáveis CSS com fallback e depuração
-            function getCSSVariable(name) {
-                const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '';
-                console.log(`Valor de ${name}: ${value}`); // Depuração
-                if (!value) {
-                    console.warn(`Variável CSS ${name} não encontrada, usando fallback.`);
-                    return getFallbackValue(name);
-                }
-                return value;
+            // Verificar se ethers.js foi carregado corretamente com retry
+            function loadEthersWithRetry(attempts = 3, delay = 1000) {
+                return new Promise((resolve, reject) => {
+                    function checkEthers() {
+                        if (typeof ethers !== 'undefined') {
+                            console.log('Ethers.js carregado com sucesso.');
+                            resolve();
+                        } else if (attempts > 0) {
+                            console.warn(`Tentativa ${4 - attempts} de carregar ethers.js falhou. Tentando novamente em ${delay}ms...`);
+                            setTimeout(() => {
+                                attempts--;
+                                checkEthers();
+                            }, delay);
+                        } else {
+                            console.error('Ethers.js não foi carregado após retry. Tentando fallback.');
+                            const ethersScript = document.createElement('script');
+                            ethersScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js';
+                            ethersScript.async = true;
+                            ethersScript.onload = () => {
+                                console.log('Ethers.js carregado via fallback.');
+                                resolve();
+                            };
+                            ethersScript.onerror = () => {
+                                console.error('Falha no fallback do ethers.js. Verifique sua conexão.');
+                                reject(new Error('Falha ao carregar ethers.js'));
+                            };
+                            document.head.appendChild(ethersScript);
+                        }
+                    }
+                    checkEthers();
+                });
             }
 
-            // Fallbacks para valores padrão
-            function getFallbackValue(name) {
-                const fallbacks = {
-                    '--title': 'MonFaucet',
-                    '--description': 'Reclame tokens MON da Monad Testnet',
-                    '--available-text': 'Disponível',
-                    '--network-text': 'Rede',
-                    '--contract-text': 'Contrato',
-                    '--claim-text': 'Reclamar Tokens',
-                    '--status-text': 'Conecte sua carteira para reclamar tokens.',
-                    '--contract-address': 'https://testnet.monadexplorer.com/address/0x1EB75153aF33AD33841565D2E11478787D863123',
-                    '--contract-address-short': '0x1EB75153...D863123'
-                };
-                return fallbacks[name] || '';
-            }
-
-            // Aplicar valores das variáveis CSS nos elementos HTML com tratamento de erro
-            try {
-                document.querySelector('.faucet-title').textContent = getCSSVariable('--title');
-                document.querySelector('p').textContent = getCSSVariable('--description');
-                document.querySelector('#infoBox div:nth-child(1) span:first-child').textContent = getCSSVariable('--available-text');
-                document.querySelector('#infoBox div:nth-child(2) span:first-child').textContent = getCSSVariable('--network-text');
-                document.querySelector('#infoBox div:nth-child(3) span:first-child').textContent = getCSSVariable('--contract-text');
-                const contractLink = document.querySelector('#infoBox div:nth-child(3) a');
-                contractLink.href = getCSSVariable('--contract-address');
-                contractLink.textContent = getCSSVariable('--contract-address-short');
-                document.getElementById('claimButton').textContent = getCSSVariable('--claim-text');
-                document.getElementById('status').textContent = getCSSVariable('--status-text');
-
-                // Verificar se ethers.js foi carregado corretamente
-                if (typeof ethers === 'undefined') {
-                    console.error('Ethers.js não foi carregado corretamente. Tentando fallback.');
-                    const ethersScript = document.createElement('script');
-                    ethersScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js';
-                    ethersScript.async = true;
-                    ethersScript.onload = () => {
-                        console.log('Ethers.js carregado via fallback.');
-                        initializeApp();
-                    };
-                    ethersScript.onerror = () => {
-                        console.error('Falha no fallback do ethers.js. Verifique sua conexão.');
-                        alert('Erro: Biblioteca ethers.js não carregada. Tente recarregar a página ou verifique sua conexão.');
-                    };
-                    document.head.appendChild(ethersScript);
-                } else {
-                    initializeApp();
-                }
-            } catch (error) {
-                console.error('Erro ao preencher textos:', error);
-                alert('Erro ao carregar o conteúdo. Recarregue a página.');
-                // Aplicar fallbacks como último recurso
-                document.querySelector('.faucet-title').textContent = getFallbackValue('--title');
-                document.querySelector('p').textContent = getFallbackValue('--description');
-                document.querySelector('#infoBox div:nth-child(1) span:first-child').textContent = getFallbackValue('--available-text');
-                document.querySelector('#infoBox div:nth-child(2) span:first-child').textContent = getFallbackValue('--network-text');
-                document.querySelector('#infoBox div:nth-child(3) span:first-child').textContent = getFallbackValue('--contract-text');
-                const contractLink = document.querySelector('#infoBox div:nth-child(3) a');
-                contractLink.href = getFallbackValue('--contract-address');
-                contractLink.textContent = getFallbackValue('--contract-address-short');
-                document.getElementById('claimButton').textContent = getFallbackValue('--claim-text');
-                document.getElementById('status').textContent = getFallbackValue('--status-text');
-            }
+            loadEthersWithRetry().then(() => {
+                initializeApp();
+            }).catch(error => {
+                console.error('Erro ao carregar ethers.js:', error);
+                alert('Erro: Biblioteca ethers.js não carregada. Tente recarregar a página ou verifique sua conexão.');
+            });
 
             function initializeApp() {
                 const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
@@ -450,7 +402,11 @@
                     }
                 ];
 
-                const socialLinks = JSON.parse(getCSSVariable('--social-links') || '{"followX": "https://twitter.com/MonFaucet", "likePost": "https://twitter.com/MonFaucet/status/123456789", "joinTelegram": "https://t.me/MonFaucetGroup"}');
+                const socialLinks = {
+                    "followX": "https://twitter.com/MonFaucet",
+                    "likePost": "https://twitter.com/MonFaucet/status/123456789",
+                    "joinTelegram": "https://t.me/MonFaucetGroup"
+                };
 
                 let walletConnected = false;
                 let tasksCompleted = 0;
@@ -460,6 +416,7 @@
                 const connectWalletButton = document.getElementById('connectWalletButton');
                 const modal = document.getElementById('confirmation-modal');
                 const modalOverlay = document.getElementById('modal-overlay');
+                const available = document.getElementById('available');
 
                 // Função de carregamento (spinner)
                 function showLoading(target) {
@@ -522,11 +479,11 @@
                     if (window.ethereum) {
                         const spinner = showLoading(connectWalletButton);
                         try {
-                            await new Promise(resolve => setTimeout(resolve, 500)); // Espera para garantir MetaMask está pronto
+                            await new Promise(resolve => setTimeout(resolve, 1000));
                             const provider = new ethers.providers.Web3Provider(window.ethereum);
                             await provider.send("eth_requestAccounts", []);
                             const network = await provider.getNetwork();
-                            if (network.chainId !== 10143) { // Monad Testnet Chain ID
+                            if (network.chainId !== 10143) {
                                 await window.ethereum.request({
                                     method: 'wallet_switchEthereumChain',
                                     params: [{ chainId: '0x27AF' }]
@@ -536,9 +493,10 @@
                             connectWalletButton.disabled = true;
                             connectWalletButton.style.opacity = '0.5';
                             checkClaimStatus();
-                            alert('Carteira conectada com sucesso na Monad Testnet!');
+                            status.textContent = 'Carteira conectada! Complete as tarefas para reclamar.';
                         } catch (error) {
-                            alert('Erro ao conectar carteira: ' + error.message);
+                            console.error('Erro ao conectar carteira:', error);
+                            alert('Erro ao conectar carteira: ' + (error.message || 'Verifique se o MetaMask está instalado e na Monad Testnet.'));
                         } finally {
                             hideLoading(spinner);
                         }
@@ -566,37 +524,46 @@
                     if (!walletConnected) {
                         claimButton.disabled = true;
                         claimButton.classList.remove('enabled');
-                        status.textContent = getCSSVariable('--status-text');
+                        status.textContent = 'Conecte sua carteira para reclamar tokens.';
                         return;
                     }
 
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                    const address = await signer.getAddress();
-                    const lastClaimTime = await contract.lastClaim(address);
-                    const now = Math.floor(Date.now() / 1000); // Timestamp em segundos
-                    const cooldown = 24 * 60 * 60; // 24 horas em segundos
+                    try {
+                        const provider = new ethers.providers.Web3Provider(window.ethereum);
+                        const signer = provider.getSigner();
+                        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-                    if (now < lastClaimTime.toNumber() + cooldown) {
-                        const remaining = lastClaimTime.toNumber() + cooldown - now;
-                        const hours = Math.floor(remaining / 3600);
-                        const minutes = Math.floor((remaining % 3600) / 60);
+                        const address = await signer.getAddress();
+                        const lastClaimTime = await contract.lastClaim(address);
+                        const now = Math.floor(Date.now() / 1000);
+                        const cooldown = 24 * 60 * 60;
+
+                        if (now < lastClaimTime.toNumber() + cooldown) {
+                            const remaining = lastClaimTime.toNumber() + cooldown - now;
+                            const hours = Math.floor(remaining / 3600);
+                            const minutes = Math.floor((remaining % 3600) / 60);
+                            claimButton.disabled = true;
+                            claimButton.classList.remove('enabled');
+                            status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
+                        } else if (tasksCompleted < 3) {
+                            claimButton.disabled = true;
+                            claimButton.classList.remove('enabled');
+                            status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
+                        } else {
+                            claimButton.disabled = false;
+                            claimButton.classList.add('enabled');
+                            status.textContent = 'Clique em "Reclamar Tokens" para receber 0.05 MON.';
+                        }
+
+                        const balance = await contract.getBalance();
+                        available.textContent = ethers.utils.formatEther(balance) + ' MON';
+                    } catch (error) {
+                        console.error('Erro ao verificar status:', error);
                         claimButton.disabled = true;
                         claimButton.classList.remove('enabled');
-                        status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
-                    } else if (tasksCompleted < 3) { // Agora são 3 tarefas (sem "Conecte sua carteira" como tarefa)
-                        claimButton.disabled = true;
-                        claimButton.classList.remove('enabled');
-                        status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
-                    } else {
-                        claimButton.disabled = false;
-                        claimButton.classList.add('enabled');
-                        status.textContent = getCSSVariable('--claim-text');
+                        status.textContent = 'Erro ao verificar o contrato. Tente novamente.';
+                        available.textContent = '0.00 MON';
                     }
-
-                    const balance = await contract.getBalance();
-                    document.getElementById('available').textContent = ethers.utils.formatEther(balance) + ' MON';
                 }
 
                 async function claimTokens() {
@@ -612,9 +579,9 @@
                         const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
                         const tx = await contract.claim();
-                        await tx.wait();
+                        const receipt = await tx.wait();
                         alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
-                        tasksCompleted = 0; // Resetar tarefas após claim
+                        tasksCompleted = 0;
                         taskButtons.forEach(btn => {
                             if (btn.getAttribute('data-task')) {
                                 btn.disabled = false;
@@ -624,7 +591,8 @@
                         });
                         checkClaimStatus();
                     } catch (error) {
-                        alert('Erro ao reclamar tokens: ' + error.message);
+                        console.error('Erro ao reclamar tokens:', error);
+                        alert('Erro ao reclamar tokens: ' + (error.message || 'Verifique sua conexão ou o contrato.'));
                     } finally {
                         hideLoading(spinner);
                     }
@@ -634,7 +602,7 @@
 
                 // Verificar status ao carregar e periodicamente
                 window.addEventListener('load', checkClaimStatus);
-                setInterval(checkClaimStatus, 30000); // Verifica a cada 30 segundos
+                setInterval(checkClaimStatus, 30000);
 
                 // Animação otimizada do canvas com menos partículas
                 const canvas = document.querySelector('canvas');
