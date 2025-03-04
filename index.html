@@ -3,55 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaucetBR Monad</title>
+    <title>MonFaucet</title>
     <style>
+        /* Bloco Editável: Configurações Gerais */
+        :root {
+            --background-start: #1E2529;
+            --background-end: #2A343C;
+            --primary-color: #FF6200;
+            --secondary-color: #00D4B5;
+            --text-color: #FFFFFF;
+            --box-background: rgba(255, 255, 255, 0.05);
+            --box-border: rgba(255, 255, 255, 0.2);
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --button-hover: #FF8C33;
+            --disabled-opacity: 0.5;
+            --font-family: 'Montserrat', Arial, sans-serif;
+            --title: "MonFaucet";
+            --description: "Reclame tokens MON da Monad Testnet";
+            --available-text: "Disponível";
+            --network-text: "Rede";
+            --contract-text: "Contrato";
+            --claim-text: "Reclamar Tokens";
+            --status-text: "Aguarde o cooldown ou conecte sua carteira.";
+            --contract-address: "https://testnet.monadexplorer.com/address/SEU_ENDERECO_CONTRATO";
+            --contract-address-short: "SEU_ENDERECO_CONTRATO";
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Montserrat', Arial, sans-serif;
-            background: linear-gradient(to bottom, #009B3A, #002776); /* Verde e azul da bandeira do Brasil */
-            color: #FFFFFF;
+            font-family: var(--font-family);
+            background: linear-gradient(to bottom, var(--background-start), var(--background-end));
+            color: var(--text-color);
             min-height: 100vh;
             text-align: center;
             overflow-x: hidden;
         }
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 50;
-            padding: 1rem;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center; /* Centralizado, sem logo */
-            align-items: center;
-        }
-        .flag-animation {
-            width: 200px;
-            height: auto;
-            animation: wave 3s ease-in-out infinite;
-        }
-        @keyframes wave {
-            0% { transform: rotate(0deg); }
-            25% { transform: rotate(5deg); }
-            50% { transform: rotate(0deg); }
-            75% { transform: rotate(-5deg); }
-            100% { transform: rotate(0deg); }
-        }
-        nav button {
-            background: #FFDF00; /* Amarelo da bandeira do Brasil */
-            color: #002776; /* Azul da bandeira do Brasil */
-            padding: 0.5rem 1.5rem;
-            border-radius: 0.5rem;
-            font-size: 1.125rem;
-            transition: all 0.5s ease-in-out, transform 0.2s;
-        }
-        nav button:hover {
-            transform: scale(1.05);
-            background: #FFD700; /* Tom mais escuro de amarelo */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-        nav button:active { transform: scale(0.95); }
         .main-content {
             min-height: 100vh;
             display: flex;
@@ -68,139 +54,112 @@
             width: 100%;
             max-width: 28rem;
             padding: 2rem;
-            background: rgba(255, 255, 255, 0.1); /* Branco translúcido */
+            background: var(--box-background);
             backdrop-filter: blur(20px);
             border-radius: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--box-border);
+            box-shadow: 0 8px 32px var(--shadow-color);
             margin-top: 5rem;
         }
         .faucet-container h1 {
             font-size: 1.875rem;
-            font-weight: bold;
-            color: #FFDF00; /* Amarelo da bandeira do Brasil */
+            font-weight: 500;
+            color: var(--primary-color);
             margin-bottom: 0.5rem;
         }
-        .faucet-container p { color: #FFFFFF; margin-bottom: 2rem; }
-        .task-button {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            background: rgba(0, 155, 58, 0.3); /* Verde translúcido da bandeira */
-            border-radius: 0.75rem;
-            color: #FFFFFF;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .task-button:hover { background: rgba(0, 155, 58, 0.4); }
-        .task-button .icon { font-size: 1.25rem; }
-        .task-button .arrow { color: #FFFFFF; }
+        .faucet-container p { color: var(--text-color); margin-bottom: 2rem; }
         .info-box {
-            background: rgba(0, 39, 118, 0.3); /* Azul translúcido da bandeira */
+            background: var(--box-background);
             border-radius: 0.75rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
         }
         .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
-        .info-box span { color: #FFFFFF; }
-        .info-box a { color: #FFDF00; text-decoration: none; }
-        .complete-button {
+        .info-box span { color: var(--text-color); }
+        .info-box a { color: var(--primary-color); text-decoration: none; }
+        .claim-button {
             width: 100%;
-            background: linear-gradient(to right, #FFDF00, #FFD700); /* Gradiente amarelo da bandeira */
-            color: #002776; /* Azul da bandeira */
+            background: var(--primary-color);
+            color: var(--text-color);
             font-weight: bold;
             padding: 0.75rem;
             border-radius: 0.75rem;
             transition: all 0.3s ease;
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: var(--disabled-opacity);
         }
-        .complete-button:hover { transform: scale(1.02); }
-        .complete-button:active { transform: scale(0.98); }
-        .complete-button.enabled { opacity: 1; cursor: pointer; }
-        .tasks-completed { color: #FFFFFF; font-size: 0.875rem; margin-top: 1rem; }
+        .claim-button:hover { transform: scale(1.02); background: var(--button-hover); }
+        .claim-button:active { transform: scale(0.98); }
+        .claim-button.enabled { opacity: 1; cursor: pointer; }
+        .status { color: var(--text-color); font-size: 0.875rem; margin-top: 1rem; }
         .decorative-blur {
             position: absolute;
             border-radius: 50%;
             filter: blur(3rem);
             pointer-events: none;
         }
-        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(255, 223, 0, 0.2); /* Amarelo translúcido */ }
-        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(0, 155, 58, 0.1); /* Verde translúcido */ }
+        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(255, 98, 0, 0.2); /* Cor primária translúcida */ }
+        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(0, 212, 181, 0.1); /* Cor secundária translúcida */ }
     </style>
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
 </head>
 <body>
-    <nav>
-        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Flag_of_Brazil.svg/200px-Flag_of_Brazil.svg.png" alt="Bandeira do Brasil" class="flag-animation">
-    </nav>
-    <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
     <div class="main-content">
+        <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
         <div class="faucet-container">
-            <h1>FaucetBR Monad</h1>
-            <p>Complete tasks to get tokens</p>
-            <div class="task-buttons" id="taskButtons">
-                <button class="task-button" data-task="connectWallet">
-                    <div class="flex items-center gap-3">
-                        <span class="icon">🔗</span>
-                        <span>Conecte sua carteira</span>
-                    </div>
-                    <span class="arrow">→</span>
-                </button>
-                <button class="task-button" data-task="followX">
-                    <div class="flex items-center gap-3">
-                        <span class="icon">𝕏</span>
-                        <span>Siga-nos no X.com</span>
-                    </div>
-                    <span class="arrow">→</span>
-                </button>
-                <button class="task-button" data-task="likePost">
-                    <div class="flex items-center gap-3">
-                        <span class="icon">👍</span>
-                        <span>Curtir nosso post no 𝕏</span>
-                    </div>
-                    <span class="arrow">→</span>
-                </button>
-                <button class="task-button" data-task="joinTelegram">
-                    <div class="flex items-center gap-3">
-                        <span class="icon">𝕋</span>
-                        <span>Entre no grupo/canal no Telegram</span>
-                    </div>
-                    <span class="arrow">→</span>
-                </button>
-            </div>
+            <h1>var(--title)</h1>
+            <p>var(--description)</p>
             <div class="info-box" id="infoBox">
-                <div><span>Disponível:</span><span id="available">0.00 MON</span></div>
-                <div><span>Rede:</span><span>Monad Testnet</span></div>
+                <div><span>var(--available-text):</span><span id="available">0.00 MON</span></div>
+                <div><span>var(--network-text):</span><span>Monad Testnet</span></div>
                 <div>
-                    <span>Contrato:</span>
+                    <span>var(--contract-text):</span>
                     <span class="flex items-center">
-                        <a href="https://testnet.monadexplorer.com/address/0x4050feb951B8d87C030959766f636BF93f5Ebca2" target="_blank" rel="noopener noreferrer">
-                            0x4050...bca2
+                        <a href="var(--contract-address)" target="_blank" rel="noopener noreferrer">
+                            var(--contract-address-short)
                         </a>
                     </span>
                 </div>
             </div>
-            <button class="complete-button" id="completeButton" disabled>Completar Todas as Tarefas</button>
-            <div class="tasks-completed" id="tasksCompleted">0 de 4 tarefas completadas</div>
+            <button class="claim-button" id="claimButton" disabled>var(--claim-text)</button>
+            <div class="status" id="status">var(--status-text)</div>
         </div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
     </div>
     <script>
-        // Configuração inicial
-        let tasksCompleted = 0;
-        let walletConnected = false;
-        const taskButtons = document.getElementById('taskButtons').querySelectorAll('.task-button');
-        const completeButton = document.getElementById('completeButton');
-        const tasksCompletedDisplay = document.getElementById('tasksCompleted');
+        const CONTRACT_ADDRESS = 'SEU_ENDERECO_CONTRATO'; // Substitua pelo endereço do contrato implantado
+        const ABI = [
+            {
+                "inputs": [],
+                "name": "claim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getBalance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "", "type": "address"}],
+                "name": "lastClaim",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
 
-        // Simular conexão com carteira (substitua por integração real com MetaMask ou RainbowKit)
+        let walletConnected = false;
+        const claimButton = document.getElementById('claimButton');
+        const status = document.getElementById('status');
+
         async function connectWallet() {
-            try {
-                if (window.ethereum) {
+            if (window.ethereum) {
+                try {
                     const provider = new ethers.providers.Web3Provider(window.ethereum);
                     await provider.send("eth_requestAccounts", []);
                     const network = await provider.getNetwork();
@@ -211,97 +170,74 @@
                         });
                     }
                     walletConnected = true;
-                    updateTasksCompleted();
-                    checkCompleteButton();
+                    checkClaimStatus();
                     alert('Carteira conectada com sucesso na Monad Testnet!');
-                } else {
-                    alert('Instale MetaMask ou uma carteira EVM compatível.');
+                } catch (error) {
+                    alert('Erro ao conectar carteira: ' + error.message);
                 }
-            } catch (error) {
-                alert('Erro ao conectar carteira: ' + error.message);
+            } else {
+                alert('Instale MetaMask ou uma carteira EVM compatível.');
             }
         }
 
-        // Gerenciar cliques nas tarefas
-        taskButtons.forEach(button => {
-            button.addEventListener('click', async () => {
-                const task = button.getAttribute('data-task');
-                switch (task) {
-                    case 'connectWallet':
-                        if (!walletConnected) await connectWallet();
-                        break;
-                    case 'followX':
-                        // Simulação: verificar follow no X (substitua por API real)
-                        if (confirm('Você seguiu @FaucetBR no X?')) {
-                            button.disabled = true;
-                            button.style.opacity = '0.5';
-                            tasksCompleted++;
-                        }
-                        break;
-                    case 'likePost':
-                        // Simulação: verificar like em post no X (substitua por API real)
-                        if (confirm('Você curtiu o post no X?')) {
-                            button.disabled = true;
-                            button.style.opacity = '0.5';
-                            tasksCompleted++;
-                        }
-                        break;
-                    case 'joinTelegram':
-                        // Simulação: verificar entrada no Telegram (substitua por Bot API)
-                        if (confirm('Você entrou no grupo/canal no Telegram?')) {
-                            button.disabled = true;
-                            button.style.opacity = '0.5';
-                            tasksCompleted++;
-                        }
-                        break;
-                }
-                updateTasksCompleted();
-                checkCompleteButton();
-            });
+        async function checkClaimStatus() {
+            if (!walletConnected) {
+                claimButton.disabled = true;
+                claimButton.classList.remove('enabled');
+                status.textContent = 'Conecte sua carteira para reclamar tokens.';
+                return;
+            }
+
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+            const address = await signer.getAddress();
+            const lastClaimTime = await contract.lastClaim(address);
+            const now = Math.floor(Date.now() / 1000); // Timestamp em segundos
+            const cooldown = 24 * 60 * 60; // 24 horas em segundos
+
+            if (now < lastClaimTime.toNumber() + cooldown) {
+                const remaining = lastClaimTime.toNumber() + cooldown - now;
+                const hours = Math.floor(remaining / 3600);
+                const minutes = Math.floor((remaining % 3600) / 60);
+                claimButton.disabled = true;
+                claimButton.classList.remove('enabled');
+                status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
+            } else {
+                claimButton.disabled = false;
+                claimButton.classList.add('enabled');
+                status.textContent = 'Clique em "Reclamar Tokens" para receber 0.05 MON.';
+            }
+
+            const balance = await contract.getBalance();
+            document.getElementById('available').textContent = ethers.utils.formatEther(balance) + ' MON';
+        }
+
+        claimButton.addEventListener('click', async () => {
+            if (!walletConnected) {
+                alert('Conecte sua carteira primeiro.');
+                return;
+            }
+
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+
+                const tx = await contract.claim();
+                await tx.wait();
+                alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
+                checkClaimStatus();
+            } catch (error) {
+                alert('Erro ao reclamar tokens: ' + error.message);
+            }
         });
 
-        function updateTasksCompleted() {
-            tasksCompletedDisplay.textContent = `${tasksCompleted} de 4 tarefas completadas`;
-        }
+        // Verificar status ao carregar e periodicamente
+        window.addEventListener('load', checkClaimStatus);
+        setInterval(checkClaimStatus, 30000); // Verifica a cada 30 segundos
 
-        function checkCompleteButton() {
-            if (tasksCompleted === 4 && walletConnected) {
-                completeButton.disabled = false;
-                completeButton.classList.add('enabled');
-                completeButton.addEventListener('click', () => {
-                    fetch('/api/faucet', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            address: window.ethereum.selectedAddress,
-                            tasks: Array.from(taskButtons).map(btn => ({
-                                name: btn.getAttribute('data-task'),
-                                completed: btn.disabled
-                            }))
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        alert(data.message);
-                        if (data.success) {
-                            updateStatus();
-                        }
-                    })
-                    .catch(error => alert('Erro ao solicitar tokens: ' + error.message));
-                });
-            }
-        }
-
-        function updateStatus() {
-            fetch('/api/status?address=' + window.ethereum.selectedAddress)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('available').textContent = data.available;
-                })
-                .catch(error => console.error('Erro ao atualizar status:', error));
-        }
-
-        // Animação simples do canvas (simulação do fundo)
+        // Animação simples do canvas (fundo semelhante ao gerenciador de airdrops)
         const canvas = document.querySelector('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -315,14 +251,13 @@
 
         function animate() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Simulação de partículas ou gradientes (simplificada)
             ctx.beginPath();
             ctx.arc(canvas.width * 0.25, canvas.height * 0.25, 100, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 223, 0, 0.2)'; // Amarelo translúcido
+            ctx.fillStyle = 'rgba(255, 98, 0, 0.2)'; // Cor primária translúcida
             ctx.fill();
             ctx.beginPath();
             ctx.arc(canvas.width * 0.75, canvas.height * 0.75, 150, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0, 155, 58, 0.1)'; // Verde translúcido
+            ctx.fillStyle = 'rgba(0, 212, 181, 0.1)'; // Cor secundária translúcida
             ctx.fill();
             requestAnimationFrame(animate);
         }
