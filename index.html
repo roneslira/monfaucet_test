@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MonFaucet</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         :root {
             --background-start: #000000;
@@ -33,7 +34,6 @@
         .main-content {
             min-height: 100vh;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 0 20px;
@@ -68,12 +68,13 @@
         .faucet-container {
             width: 100%;
             max-width: 24rem;
-            padding: 1.5rem;
+            padding: 2rem;
             background: var(--box-background);
             backdrop-filter: blur(20px);
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 8px 16px var(--shadow-color);
+            min-height: 450px; /* Aumentado para dar mais espaço */
         }
         .faucet-title {
             font-size: 2.8rem;
@@ -185,8 +186,57 @@
         }
         .blur-1 { top: 25%; left: 25%; width: 14rem; height: 14rem; background: rgba(0, 122, 255, 0.2); }
         .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); }
+        footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 0.5rem;
+        }
+        footer a:hover { color: var(--secondary-color); }
+        .made-by {
+            position: fixed;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            opacity: 0.5;
+        }
+        .donate-section { margin-top: 1rem; }
+        .donate-section button {
+            background: var(--accent-color);
+            color: var(--text-color);
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+        .ad-container {
+            position: absolute;
+            width: 300px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--box-border);
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        .ad-left { left: calc(50% - 650px); top: 50%; transform: translateY(-50%); }
+        .ad-right { right: calc(50% - 650px); top: 50%; transform: translateY(-50%); }
+        @media (max-width: 1400px) { .ad-container { display: none; } }
         @media (max-width: 768px) {
-            .faucet-container { max-width: 90%; padding: 1rem; }
+            .faucet-container { max-width: 90%; padding: 1.5rem; min-height: 400px; }
             .faucet-title { font-size: 2rem; }
             .task-button, .claim-button { padding: 0.8rem; }
             .wallet-info { max-width: 90%; }
@@ -196,6 +246,7 @@
 <body>
     <div class="main-content">
         <canvas></canvas>
+        <div class="ad-container ad-left">Ad Space (300x600)</div>
         <div class="wallet-info" id="walletInfo">
             <span id="walletAddress"></span>
             <button id="disconnectWallet">Disconnect</button>
@@ -228,15 +279,18 @@
             </div>
             <div class="info-box" id="infoBox">
                 <div><span>Available</span><span id="available">0.00 MON</span></div>
-                <div><span>Claim Amount</span><span id="claimAmount">0.00 MON</span></div>
+                <div><span>Claim Amount</span><span id="claimAmount">0.01 MON</span></div>
                 <div><span>Network</span><span>Monad Testnet</span></div>
+                <div><span>Last Claim</span><span id="lastClaim">None</span></div>
             </div>
+            <div class="g-recaptcha" data-sitekey="6LfKURIAAAAAADl_4WM4D4mXI8PoE-6lwLiC0Z0N" data-callback="enableClaim"></div>
             <button class="claim-button" id="claimButton" disabled>
                 <div class="spinner"></div>
                 <span>Claim Tokens</span>
             </button>
             <div class="status" id="status"></div>
         </div>
+        <div class="ad-container ad-right">Ad Space (300x600)</div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
     </div>
@@ -248,6 +302,14 @@
             <button class="modal-button" id="confirm-no">No</button>
         </div>
     </div>
+    <footer>
+        <a href="#">About</a> | <a href="#">Contact</a> | <a href="#">Terms</a>
+        <div class="donate-section">
+            Help the Nads, donate to the faucet: 
+            <button onclick="copyContractAddress()">Copy Contract Address</button>
+        </div>
+    </footer>
+    <div class="made-by">Feito por rLira <i class="flag flag-br"></i></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script>
         if (typeof ethers === 'undefined') {
@@ -269,9 +331,17 @@
             "followX": "https://x.com/_roneslira?follow=true",
             "likePost": "https://x.com/_roneslira/status/123456789"
         };
+        const MONAD_TESTNET = {
+            chainId: '0x27AF',
+            chainName: 'Monad Testnet',
+            rpcUrls: ['https://monad-testnet-1.calderachain.xyz/http'], // RPC oficial (ajuste se necessário)
+            nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+            blockExplorerUrls: ['https://monad-explorer.testnet.caldera.xyz']
+        };
 
         let walletConnected = false;
         let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
+        let captchaVerified = false;
         const taskButtons = document.querySelectorAll('.task-button');
         const claimButton = document.getElementById('claimButton');
         const claimButtonText = claimButton.querySelector('span');
@@ -284,6 +354,7 @@
         const disconnectWallet = document.getElementById('disconnectWallet');
         const available = document.getElementById('available');
         const claimAmount = document.getElementById('claimAmount');
+        const lastClaim = document.getElementById('lastClaim');
 
         function updateTaskButtons() {
             taskButtons.forEach(button => {
@@ -314,10 +385,13 @@
                         });
                     } catch (switchError) {
                         if (switchError.code === 4902) {
-                            alert('Please add Monad Testnet to MetaMask (Chain ID: 10143).');
-                            return;
+                            await window.ethereum.request({
+                                method: 'wallet_addEthereumChain',
+                                params: [MONAD_TESTNET]
+                            });
+                        } else {
+                            throw switchError;
                         }
-                        throw switchError;
                     }
                 }
                 walletConnected = true;
@@ -341,6 +415,8 @@
         disconnectWallet.addEventListener('click', () => {
             walletConnected = false;
             tasksCompleted = { connectWallet: false, followX: false, likePost: false };
+            captchaVerified = false;
+            grecaptcha.reset();
             walletInfo.style.display = 'none';
             updateTaskButtons();
             claimButton.disabled = true;
@@ -348,7 +424,8 @@
             claimButtonText.textContent = 'Claim Tokens';
             status.textContent = 'Connect your wallet to start.';
             available.textContent = '0.00 MON';
-            claimAmount.textContent = '0.00 MON';
+            claimAmount.textContent = '0.01 MON';
+            lastClaim.textContent = 'None';
         });
 
         taskButtons.forEach(button => {
@@ -385,13 +462,16 @@
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
                 const balance = await contract.getBalance();
-                const claimAmt = await contract.CLAIM_AMOUNT();
+                const cachedClaim = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                const cachedCooldown = localStorage.getItem('cooldownPeriod') || (await contract.COOLDOWN_PERIOD()).toString();
+                localStorage.setItem('claimAmount', cachedClaim);
+                localStorage.setItem('cooldownPeriod', cachedCooldown);
                 available.textContent = ethers.utils.formatEther(balance) + ' MON';
-                claimAmount.textContent = ethers.utils.formatEther(claimAmt) + ' MON';
+                claimAmount.textContent = cachedClaim + ' MON';
             } catch (error) {
                 console.error('Error fetching contract info:', error);
                 available.textContent = 'Error';
-                claimAmount.textContent = 'Error';
+                claimAmount.textContent = '0.01 MON';
             }
         }
 
@@ -409,22 +489,26 @@
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                 const address = await signer.getAddress();
                 const lastClaimTime = await contract.lastClaim(address);
-                const cooldown = await contract.COOLDOWN_PERIOD();
+                const cooldown = parseInt(localStorage.getItem('cooldownPeriod') || await contract.COOLDOWN_PERIOD());
                 const now = Math.floor(Date.now() / 1000);
 
-                if (now < lastClaimTime.toNumber() + cooldown.toNumber()) {
+                if (lastClaimTime.toNumber() > 0) {
+                    lastClaim.textContent = new Date(lastClaimTime.toNumber() * 1000).toLocaleString();
+                }
+
+                if (now < lastClaimTime.toNumber() + cooldown) {
                     startCooldownCountdown(lastClaimTime, cooldown);
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = 'Tasks completed. Waiting for cooldown.';
-                } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
+                    status.textContent = captchaVerified ? 'Tasks completed. Waiting for cooldown.' : 'Verify CAPTCHA to proceed.';
+                } else if (!tasksCompleted.followX || !tasksCompleted.likePost || !captchaVerified) {
                     claimButtonText.textContent = 'Claim Tokens';
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
-                    status.textContent = 'Complete all tasks to claim tokens.';
+                    status.textContent = captchaVerified ? 'Complete all tasks to claim tokens.' : 'Verify CAPTCHA to proceed.';
                 } else {
-                    const claimAmt = await contract.CLAIM_AMOUNT();
-                    claimButtonText.textContent = `Claim ${ethers.utils.formatEther(claimAmt)} MON`;
+                    const claimAmt = localStorage.getItem('claimAmount') || ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                    claimButtonText.textContent = `Claim ${claimAmt} MON`;
                     claimButton.disabled = false;
                     claimButton.classList.add('enabled');
                     status.textContent = 'Ready to claim!';
@@ -439,7 +523,7 @@
         }
 
         function startCooldownCountdown(lastClaimTime, cooldown) {
-            const endTime = lastClaimTime.toNumber() + cooldown.toNumber();
+            const endTime = lastClaimTime.toNumber() + cooldown;
             const updateTimer = () => {
                 const now = Math.floor(Date.now() / 1000);
                 const remaining = endTime - now;
@@ -457,8 +541,8 @@
         }
 
         async function claimTokens() {
-            if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost) {
-                alert('Connect wallet and complete all tasks first.');
+            if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost || !captchaVerified) {
+                alert('Connect wallet, complete all tasks, and verify CAPTCHA first.');
                 return;
             }
             claimButton.classList.add('loading');
@@ -473,6 +557,8 @@
                 alert('Tokens claimed successfully!');
                 tasksCompleted.followX = false;
                 tasksCompleted.likePost = false;
+                captchaVerified = false;
+                grecaptcha.reset();
                 updateTaskButtons();
                 await updateContractInfo();
                 checkClaimStatus();
@@ -484,6 +570,17 @@
             } finally {
                 claimButton.classList.remove('loading');
             }
+        }
+
+        function enableClaim() {
+            captchaVerified = true;
+            checkClaimStatus();
+        }
+
+        function copyContractAddress() {
+            navigator.clipboard.writeText(CONTRACT_ADDRESS).then(() => {
+                alert('Contract address copied to clipboard!');
+            });
         }
 
         claimButton.addEventListener('click', claimTokens);
