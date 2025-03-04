@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MonFaucet</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" defer>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --background-start: #000000;
@@ -194,214 +194,219 @@
             <button class="modal-button" id="confirm-no">No</button>
         </div>
     </div>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js" defer></script>
-    <script defer>
-        window.onload = function() {
-            const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
-            const ABI = [
-                {"inputs":[],"name":"claim","outputs":[],"stateMutability":"nonpayable","type":"function"},
-                {"inputs":[],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"},
-                {"stateMutability":"payable","type":"receive"},
-                {"inputs":[],"name":"CLAIM_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-                {"inputs":[],"name":"COOLDOWN_PERIOD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-                {"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-                {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastClaim","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
-            ];
-            const socialLinks = {
-                "followX": "https://x.com/_roneslira?follow=true",
-                "likePost": "https://x.com/_roneslira/status/123456789"
-            };
+    <!-- Carregar ethers.js sem defer para garantir disponibilidade -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script>
+        // Verificar se ethers carregou antes de prosseguir
+        if (typeof ethers === 'undefined') {
+            document.getElementById('status').textContent = 'Error: ethers.js not loaded. Please refresh the page.';
+            throw new Error('ethers.js not loaded');
+        }
 
-            let walletConnected = false;
-            let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
-            const taskButtons = document.querySelectorAll('.task-button');
-            const claimButton = document.getElementById('claimButton');
-            const status = document.getElementById('status');
-            const connectWalletButton = document.getElementById('connectWalletButton');
-            const modal = document.getElementById('confirmation-modal');
-            const modalOverlay = document.getElementById('modal-overlay');
-            const walletInfo = document.getElementById('walletInfo');
-            const walletAddress = document.getElementById('walletAddress');
-            const disconnectWallet = document.getElementById('disconnectWallet');
-            const available = document.getElementById('available');
-            const claimAmount = document.getElementById('claimAmount');
+        const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
+        const ABI = [
+            {"inputs":[],"name":"claim","outputs":[],"stateMutability":"nonpayable","type":"function"},
+            {"inputs":[],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"},
+            {"stateMutability":"payable","type":"receive"},
+            {"inputs":[],"name":"CLAIM_AMOUNT","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"COOLDOWN_PERIOD","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[],"name":"getBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
+            {"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastClaim","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}
+        ];
+        const socialLinks = {
+            "followX": "https://x.com/_roneslira?follow=true",
+            "likePost": "https://x.com/_roneslira/status/123456789"
+        };
 
-            function updateTaskButtons() {
-                taskButtons.forEach(button => {
-                    const task = button.getAttribute('data-task');
-                    if (task) {
-                        button.disabled = !walletConnected || tasksCompleted[task];
-                        button.style.opacity = tasksCompleted[task] ? '0.5' : '1';
-                    }
-                });
-                connectWalletButton.disabled = walletConnected;
-                connectWalletButton.style.opacity = walletConnected ? '0.5' : '1';
-            }
+        let walletConnected = false;
+        let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
+        const taskButtons = document.querySelectorAll('.task-button');
+        const claimButton = document.getElementById('claimButton');
+        const status = document.getElementById('status');
+        const connectWalletButton = document.getElementById('connectWalletButton');
+        const modal = document.getElementById('confirmation-modal');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const walletInfo = document.getElementById('walletInfo');
+        const walletAddress = document.getElementById('walletAddress');
+        const disconnectWallet = document.getElementById('disconnectWallet');
+        const available = document.getElementById('available');
+        const claimAmount = document.getElementById('claimAmount');
 
-            async function connectWallet() {
-                if (!window.ethereum) {
-                    alert('Please install MetaMask or an EVM-compatible wallet.');
-                    return;
-                }
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    await provider.send("eth_requestAccounts", []);
-                    const network = await provider.getNetwork();
-                    if (network.chainId !== 10143) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: '0x27AF' }]
-                            });
-                        } catch (switchError) {
-                            if (switchError.code === 4902) {
-                                alert('Please add Monad Testnet to MetaMask manually (Chain ID: 10143).');
-                                return;
-                            }
-                            throw switchError;
-                        }
-                    }
-                    walletConnected = true;
-                    const signer = provider.getSigner();
-                    const address = await signer.getAddress();
-                    walletAddress.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
-                    walletInfo.style.display = 'flex';
-                    tasksCompleted.connectWallet = true;
-                    updateTaskButtons();
-                    await updateContractInfo();
-                    checkClaimStatus();
-                    status.textContent = 'Wallet connected! Complete tasks to claim.';
-                } catch (error) {
-                    console.error('Wallet connection error:', error);
-                    status.textContent = 'Failed to connect wallet: ' + (error.message || 'Unknown error');
-                }
-            }
-
-            connectWalletButton.addEventListener('click', connectWallet);
-
-            disconnectWallet.addEventListener('click', () => {
-                walletConnected = false;
-                tasksCompleted = { connectWallet: false, followX: false, likePost: false };
-                walletInfo.style.display = 'none';
-                updateTaskButtons();
-                claimButton.disabled = true;
-                claimButton.classList.remove('enabled');
-                status.textContent = 'Connect your wallet to start.';
-                available.textContent = '0.00 MON';
-                claimAmount.textContent = '0.00 MON';
-            });
-
+        function updateTaskButtons() {
             taskButtons.forEach(button => {
                 const task = button.getAttribute('data-task');
                 if (task) {
-                    button.addEventListener('click', () => {
-                        if (!walletConnected) {
-                            alert('Connect your wallet first.');
-                            return;
-                        }
-                        if (tasksCompleted[task]) return;
-                        const link = socialLinks[task];
-                        window.open(link, '_blank');
-                        modal.style.display = 'block';
-                        modalOverlay.style.display = 'block';
-                        document.getElementById('confirm-yes').onclick = () => {
-                            tasksCompleted[task] = true;
-                            updateTaskButtons();
-                            checkClaimStatus();
-                            modal.style.display = 'none';
-                            modalOverlay.style.display = 'none';
-                        };
-                        document.getElementById('confirm-no').onclick = () => {
-                            modal.style.display = 'none';
-                            modalOverlay.style.display = 'none';
-                        };
-                    });
+                    button.disabled = !walletConnected || tasksCompleted[task];
+                    button.style.opacity = tasksCompleted[task] ? '0.5' : '1';
                 }
             });
+            connectWalletButton.disabled = walletConnected;
+            connectWalletButton.style.opacity = walletConnected ? '0.5' : '1';
+        }
 
-            async function updateContractInfo() {
-                if (!walletConnected) return;
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-                    const balance = await contract.getBalance();
-                    const claimAmt = await contract.CLAIM_AMOUNT();
-                    available.textContent = ethers.utils.formatEther(balance) + ' MON';
-                    claimAmount.textContent = ethers.utils.formatEther(claimAmt) + ' MON';
-                } catch (error) {
-                    console.error('Error fetching contract info:', error);
-                    available.textContent = 'Error';
-                    claimAmount.textContent = 'Error';
-                }
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert('Please install MetaMask or an EVM-compatible wallet.');
+                return;
             }
-
-            async function checkClaimStatus() {
-                if (!walletConnected) {
-                    claimButton.disabled = true;
-                    claimButton.classList.remove('enabled');
-                    status.textContent = 'Connect your wallet to start.';
-                    return;
-                }
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                    const address = await signer.getAddress();
-                    const lastClaimTime = await contract.lastClaim(address);
-                    const cooldown = await contract.COOLDOWN_PERIOD();
-                    const now = Math.floor(Date.now() / 1000);
-
-                    if (now < lastClaimTime.toNumber() + cooldown.toNumber()) {
-                        const remaining = lastClaimTime.toNumber() + cooldown.toNumber() - now;
-                        const hours = Math.floor(remaining / 3600);
-                        const minutes = Math.floor((remaining % 3600) / 60);
-                        status.textContent = `Wait ${hours}h ${minutes}m for next claim.`;
-                        claimButton.disabled = true;
-                        claimButton.classList.remove('enabled');
-                    } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
-                        status.textContent = 'Complete all tasks to claim tokens.';
-                        claimButton.disabled = true;
-                        claimButton.classList.remove('enabled');
-                    } else {
-                        const claimAmt = await contract.CLAIM_AMOUNT();
-                        status.textContent = `Ready! Click to claim ${ethers.utils.formatEther(claimAmt)} MON.`;
-                        claimButton.disabled = false;
-                        claimButton.classList.add('enabled');
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const network = await provider.getNetwork();
+                if (network.chainId !== 10143) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_switchEthereumChain',
+                            params: [{ chainId: '0x27AF' }]
+                        });
+                    } catch (switchError) {
+                        if (switchError.code === 4902) {
+                            alert('Please add Monad Testnet to MetaMask (Chain ID: 10143).');
+                            return;
+                        }
+                        throw switchError;
                     }
-                } catch (error) {
-                    console.error('Error checking claim status:', error);
-                    status.textContent = 'Error verifying contract. Try again.';
+                }
+                walletConnected = true;
+                const signer = provider.getSigner();
+                const address = await signer.getAddress();
+                walletAddress.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
+                walletInfo.style.display = 'flex';
+                tasksCompleted.connectWallet = true;
+                updateTaskButtons();
+                await updateContractInfo();
+                checkClaimStatus();
+                status.textContent = 'Wallet connected! Complete tasks to claim.';
+            } catch (error) {
+                console.error('Wallet connection error:', error);
+                status.textContent = 'Failed to connect wallet: ' + (error.message || 'Unknown error');
+            }
+        }
+
+        connectWalletButton.addEventListener('click', connectWallet);
+
+        disconnectWallet.addEventListener('click', () => {
+            walletConnected = false;
+            tasksCompleted = { connectWallet: false, followX: false, likePost: false };
+            walletInfo.style.display = 'none';
+            updateTaskButtons();
+            claimButton.disabled = true;
+            claimButton.classList.remove('enabled');
+            status.textContent = 'Connect your wallet to start.';
+            available.textContent = '0.00 MON';
+            claimAmount.textContent = '0.00 MON';
+        });
+
+        taskButtons.forEach(button => {
+            const task = button.getAttribute('data-task');
+            if (task) {
+                button.addEventListener('click', () => {
+                    if (!walletConnected) {
+                        alert('Connect your wallet first.');
+                        return;
+                    }
+                    if (tasksCompleted[task]) return;
+                    const link = socialLinks[task];
+                    window.open(link, '_blank');
+                    modal.style.display = 'block';
+                    modalOverlay.style.display = 'block';
+                    document.getElementById('confirm-yes').onclick = () => {
+                        tasksCompleted[task] = true;
+                        updateTaskButtons();
+                        checkClaimStatus();
+                        modal.style.display = 'none';
+                        modalOverlay.style.display = 'none';
+                    };
+                    document.getElementById('confirm-no').onclick = () => {
+                        modal.style.display = 'none';
+                        modalOverlay.style.display = 'none';
+                    };
+                });
+            }
+        });
+
+        async function updateContractInfo() {
+            if (!walletConnected) return;
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+                const balance = await contract.getBalance();
+                const claimAmt = await contract.CLAIM_AMOUNT();
+                available.textContent = ethers.utils.formatEther(balance) + ' MON';
+                claimAmount.textContent = ethers.utils.formatEther(claimAmt) + ' MON';
+            } catch (error) {
+                console.error('Error fetching contract info:', error);
+                available.textContent = 'Error';
+                claimAmount.textContent = 'Error';
+            }
+        }
+
+        async function checkClaimStatus() {
+            if (!walletConnected) {
+                claimButton.disabled = true;
+                claimButton.classList.remove('enabled');
+                status.textContent = 'Connect your wallet to start.';
+                return;
+            }
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                const address = await signer.getAddress();
+                const lastClaimTime = await contract.lastClaim(address);
+                const cooldown = await contract.COOLDOWN_PERIOD();
+                const now = Math.floor(Date.now() / 1000);
+
+                if (now < lastClaimTime.toNumber() + cooldown.toNumber()) {
+                    const remaining = lastClaimTime.toNumber() + cooldown.toNumber() - now;
+                    const hours = Math.floor(remaining / 3600);
+                    const minutes = Math.floor((remaining % 3600) / 60);
+                    status.textContent = `Wait ${hours}h ${minutes}m for next claim.`;
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
+                } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
+                    status.textContent = 'Complete all tasks to claim tokens.';
+                    claimButton.disabled = true;
+                    claimButton.classList.remove('enabled');
+                } else {
+                    const claimAmt = await contract.CLAIM_AMOUNT();
+                    status.textContent = `Ready! Click to claim ${ethers.utils.formatEther(claimAmt)} MON.`;
+                    claimButton.disabled = false;
+                    claimButton.classList.add('enabled');
                 }
+            } catch (error) {
+                console.error('Error checking claim status:', error);
+                status.textContent = 'Error verifying contract. Try again.';
+                claimButton.disabled = true;
+                claimButton.classList.remove('enabled');
             }
+        }
 
-            async function claimTokens() {
-                if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost) {
-                    alert('Connect wallet and complete all tasks first.');
-                    return;
-                }
-                try {
-                    const provider = new ethers.providers.Web3Provider(window.ethereum);
-                    const signer = provider.getSigner();
-                    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                    const tx = await contract.claim();
-                    await tx.wait();
-                    alert('Tokens claimed successfully!');
-                    tasksCompleted.followX = false;
-                    tasksCompleted.likePost = false;
-                    updateTaskButtons();
-                    await updateContractInfo();
-                    checkClaimStatus();
-                } catch (error) {
-                    console.error('Claim error:', error);
-                    alert('Failed to claim tokens: ' + (error.message || 'Unknown error'));
-                }
+        async function claimTokens() {
+            if (!walletConnected || !tasksCompleted.followX || !tasksCompleted.likePost) {
+                alert('Connect wallet and complete all tasks first.');
+                return;
             }
+            try {
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                const signer = provider.getSigner();
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+                const tx = await contract.claim();
+                await tx.wait();
+                alert('Tokens claimed successfully!');
+                tasksCompleted.followX = false;
+                tasksCompleted.likePost = false;
+                updateTaskButtons();
+                await updateContractInfo();
+                checkClaimStatus();
+            } catch (error) {
+                console.error('Claim error:', error);
+                alert('Failed to claim tokens: ' + (error.message || 'Unknown error'));
+            }
+        }
 
-            claimButton.addEventListener('click', claimTokens);
-            window.addEventListener('load', checkClaimStatus);
-        };
+        claimButton.addEventListener('click', claimTokens);
+        window.addEventListener('load', checkClaimStatus);
     </script>
 </body>
 </html>
