@@ -7,15 +7,15 @@
     <style>
         /* Bloco Editável: Configurações Gerais */
         :root {
-            --background-start: #1E2529;
-            --background-end: #2A343C;
-            --primary-color: #FF6200;
-            --secondary-color: #00D4B5;
+            --background-start: #000000;
+            --background-end: #1A1A1A;
+            --primary-color: #007AFF; /* Azul principal do site da Monad */
+            --secondary-color: #00D4FF; /* Ciano claro do site da Monad */
             --text-color: #FFFFFF;
             --box-background: rgba(255, 255, 255, 0.05);
-            --box-border: rgba(255, 255, 255, 0.2);
-            --shadow-color: rgba(0, 0, 0, 0.2);
-            --button-hover: #FF8C33;
+            --box-border: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --button-hover: #00D4FF;
             --disabled-opacity: 0.5;
             --font-family: 'Montserrat', Arial, sans-serif;
             --title: "MonFaucet";
@@ -24,9 +24,18 @@
             --network-text: "Rede";
             --contract-text: "Contrato";
             --claim-text: "Reclamar Tokens";
-            --status-text: "Aguarde o cooldown ou conecte sua carteira.";
+            --status-text: "Conecte sua carteira para reclamar tokens.";
             --contract-address: "https://testnet.monadexplorer.com/address/SEU_ENDERECO_CONTRATO";
             --contract-address-short: "SEU_ENDERECO_CONTRATO";
+            --social-links: {
+                "followX": "https://twitter.com/MonFaucet",
+                "likePost": "https://twitter.com/MonFaucet/status/123456789",
+                "joinTelegram": "https://t.me/MonFaucetGroup"
+            };
+            --banner-left-url: "https://example.com/banner-left.jpg";
+            --banner-right-url: "https://example.com/banner-right.jpg";
+            --banner-width: 200px;
+            --banner-height: auto;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -37,6 +46,7 @@
             min-height: 100vh;
             text-align: center;
             overflow-x: hidden;
+            position: relative;
         }
         .main-content {
             min-height: 100vh;
@@ -48,9 +58,32 @@
             z-index: 2;
         }
         canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        .banner {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: var(--banner-width);
+            height: var(--banner-height);
+            z-index: 10;
+            border: 2px dashed var(--box-border);
+            padding: 5px;
+            background: var(--box-background);
+        }
+        .banner-left { left: 20px; }
+        .banner-right { right: 20px; }
+        .banner::after {
+            content: 'Banner 200px x Auto';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
         .faucet-container {
             position: relative;
-            z-index: 10;
+            z-index: 20;
             width: 100%;
             max-width: 28rem;
             padding: 2rem;
@@ -61,13 +94,47 @@
             box-shadow: 0 8px 32px var(--shadow-color);
             margin-top: 5rem;
         }
-        .faucet-container h1 {
-            font-size: 1.875rem;
-            font-weight: 500;
+        .faucet-title {
+            font-size: 2.5rem;
+            font-weight: bold;
             color: var(--primary-color);
-            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px var(--shadow-color);
+            margin-bottom: 1rem;
+            font-family: 'Arial Black', sans-serif; /* Fonte mais chamativa, como no original da Cult */
         }
         .faucet-container p { color: var(--text-color); margin-bottom: 2rem; }
+        .task-button, .claim-button {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: var(--box-background);
+            border-radius: 0.75rem;
+            color: var(--text-color);
+            border: 1px solid var(--box-border);
+            box-shadow: 0 4px 12px var(--shadow-color);
+            font-weight: bold;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-align: left;
+        }
+        .task-button:hover, .claim-button:hover { 
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 6px 16px var(--shadow-color);
+        }
+        .task-button:active, .claim-button:active { transform: scale(0.98); }
+        .task-button .icon { font-size: 1.25rem; }
+        .task-button .arrow, .claim-button .arrow { color: var(--text-color); }
+        .claim-button {
+            background: var(--primary-color);
+            color: var(--text-color);
+            opacity: var(--disabled-opacity);
+            cursor: not-allowed;
+        }
+        .claim-button.enabled { opacity: 1; cursor: pointer; }
         .info-box {
             background: var(--box-background);
             border-radius: 0.75rem;
@@ -77,57 +144,140 @@
         .info-box div { display: flex; justify-content: space-between; margin-bottom: 0.5rem; }
         .info-box span { color: var(--text-color); }
         .info-box a { color: var(--primary-color); text-decoration: none; }
-        .claim-button {
-            width: 100%;
+        .status { color: var(--text-color); font-size: 0.875rem; margin-top: 1rem; }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--box-background);
+            padding: 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid var(--box-border);
+            box-shadow: 0 8px 32px var(--shadow-color);
+            z-index: 30;
+        }
+        .modal-content { color: var(--text-color); }
+        .modal-buttons {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .modal-button {
             background: var(--primary-color);
             color: var(--text-color);
-            font-weight: bold;
-            padding: 0.75rem;
-            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            border: 1px solid var(--box-border);
+            box-shadow: 0 4px 12px var(--shadow-color);
             transition: all 0.3s ease;
-            cursor: not-allowed;
-            opacity: var(--disabled-opacity);
         }
-        .claim-button:hover { transform: scale(1.02); background: var(--button-hover); }
-        .claim-button:active { transform: scale(0.98); }
-        .claim-button.enabled { opacity: 1; cursor: pointer; }
-        .status { color: var(--text-color); font-size: 0.875rem; margin-top: 1rem; }
+        .modal-button:hover { background: var(--button-hover); box-shadow: 0 6px 16px var(--shadow-color); }
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 20;
+        }
         .decorative-blur {
             position: absolute;
             border-radius: 50%;
             filter: blur(3rem);
             pointer-events: none;
         }
-        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(255, 98, 0, 0.2); /* Cor primária translúcida */ }
-        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(0, 212, 181, 0.1); /* Cor secundária translúcida */ }
+        .blur-1 { top: 25%; left: 25%; width: 16rem; height: 16rem; background: rgba(0, 122, 255, 0.2); /* Azul primário translúcido */ }
+        .blur-2 { bottom: 33%; right: 33%; width: 24rem; height: 24rem; background: rgba(0, 212, 255, 0.1); /* Ciano translúcido */ }
     </style>
     <script src="https://cdn.ethers.io/lib/ethers-5.7.2.min.js" integrity="sha384-..." crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="main-content">
         <canvas class="fixed top-0 left-0 w-full h-full"></canvas>
+        <img src="var(--banner-left-url)" alt="Banner Esquerdo" class="banner banner-left">
+        <img src="var(--banner-right-url)" alt="Banner Direito" class="banner banner-right">
         <div class="faucet-container">
-            <h1>var(--title)</h1>
-            <p>var(--description)</p>
+            <div class="faucet-title">[Título será preenchido via JS]</div>
+            <p>[Descrição será preenchido via JS]</p>
+            <div class="task-buttons" id="taskButtons">
+                <button class="task-button" id="connectWalletButton">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">🔗</span>
+                        <span>Conectar Carteira</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button" data-task="followX">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">𝕏</span>
+                        <span>Siga-nos no X.com</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button" data-task="likePost">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">👍</span>
+                        <span>Curtir nosso post no 𝕏</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+                <button class="task-button" data-task="joinTelegram">
+                    <div class="flex items-center gap-3">
+                        <span class="icon">𝕋</span>
+                        <span>Entre no grupo/canal no Telegram</span>
+                    </div>
+                    <span class="arrow">→</span>
+                </button>
+            </div>
             <div class="info-box" id="infoBox">
-                <div><span>var(--available-text):</span><span id="available">0.00 MON</span></div>
-                <div><span>var(--network-text):</span><span>Monad Testnet</span></div>
+                <div><span>[Disponível será preenchido via JS]</span><span id="available">0.00 MON</span></div>
+                <div><span>[Rede será preenchido via JS]</span><span>Monad Testnet</span></div>
                 <div>
-                    <span>var(--contract-text):</span>
+                    <span>[Contrato será preenchido via JS]</span>
                     <span class="flex items-center">
-                        <a href="var(--contract-address)" target="_blank" rel="noopener noreferrer">
-                            var(--contract-address-short)
+                        <a href="[Link do contrato será preenchido via JS]" target="_blank" rel="noopener noreferrer">
+                            [Endereço curto do contrato será preenchido via JS]
                         </a>
                     </span>
                 </div>
             </div>
-            <button class="claim-button" id="claimButton" disabled>var(--claim-text)</button>
-            <div class="status" id="status">var(--status-text)</div>
+            <button class="claim-button" id="claimButton" disabled>[Reclamar Tokens será preenchido via JS]</button>
+            <div class="status" id="status">[Status será preenchido via JS]</div>
         </div>
         <div class="decorative-blur blur-1"></div>
         <div class="decorative-blur blur-2"></div>
     </div>
+    <div id="modal-overlay"></div>
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">Você realmente seguiu/clicou no link?</div>
+        <div class="modal-buttons">
+            <button class="modal-button" id="confirm-yes">Sim</button>
+            <button class="modal-button" id="confirm-no">Não</button>
+        </div>
+    </div>
     <script>
+        // Função para obter valores das variáveis CSS
+        function getCSSVariable(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '';
+        }
+
+        // Aplicar valores das variáveis CSS nos elementos HTML
+        document.querySelector('.faucet-title').textContent = getCSSVariable('--title');
+        document.querySelector('p').textContent = getCSSVariable('--description');
+        document.querySelector('#infoBox div:nth-child(1) span:first-child').textContent = getCSSVariable('--available-text');
+        document.querySelector('#infoBox div:nth-child(2) span:first-child').textContent = getCSSVariable('--network-text');
+        document.querySelector('#infoBox div:nth-child(3) span:first-child').textContent = getCSSVariable('--contract-text');
+        document.querySelector('#infoBox div:nth-child(3) a').href = getCSSVariable('--contract-address');
+        document.querySelector('#infoBox div:nth-child(3) a').textContent = getCSSVariable('--contract-address-short');
+        document.getElementById('claimButton').textContent = getCSSVariable('--claim-text');
+        document.getElementById('status').textContent = getCSSVariable('--status-text');
+
         const CONTRACT_ADDRESS = 'SEU_ENDERECO_CONTRATO'; // Substitua pelo endereço do contrato implantado
         const ABI = [
             {
@@ -153,9 +303,40 @@
             }
         ];
 
+        const socialLinks = JSON.parse(getCSSVariable('--social-links').replace(/'/g, '"'));
+
         let walletConnected = false;
+        let tasksCompleted = 0;
+        const taskButtons = document.getElementById('taskButtons').querySelectorAll('.task-button');
         const claimButton = document.getElementById('claimButton');
         const status = document.getElementById('status');
+        const connectWalletButton = document.getElementById('connectWalletButton');
+        const modal = document.getElementById('confirmation-modal');
+        const modalOverlay = document.getElementById('modal-overlay');
+
+        function showModal(task) {
+            modal.style.display = 'block';
+            modalOverlay.style.display = 'block';
+            document.getElementById('confirm-yes').onclick = () => {
+                completeTask(task);
+                modal.style.display = 'none';
+                modalOverlay.style.display = 'none';
+            };
+            document.getElementById('confirm-no').onclick = () => {
+                modal.style.display = 'none';
+                modalOverlay.style.display = 'none';
+            };
+        }
+
+        function completeTask(task) {
+            const button = Array.from(taskButtons).find(btn => btn.getAttribute('data-task') === task);
+            if (button) {
+                button.disabled = true;
+                button.style.opacity = '0.5';
+                tasksCompleted++;
+                checkClaimStatus();
+            }
+        }
 
         async function connectWallet() {
             if (window.ethereum) {
@@ -170,6 +351,8 @@
                         });
                     }
                     walletConnected = true;
+                    connectWalletButton.disabled = true;
+                    connectWalletButton.style.opacity = '0.5';
                     checkClaimStatus();
                     alert('Carteira conectada com sucesso na Monad Testnet!');
                 } catch (error) {
@@ -180,11 +363,26 @@
             }
         }
 
+        connectWalletButton.addEventListener('click', connectWallet);
+
+        taskButtons.forEach(button => {
+            if (button.getAttribute('data-task')) {
+                button.addEventListener('click', () => {
+                    const task = button.getAttribute('data-task');
+                    const link = socialLinks[task];
+                    if (link) {
+                        window.open(link, '_blank');
+                        showModal(task);
+                    }
+                });
+            }
+        });
+
         async function checkClaimStatus() {
             if (!walletConnected) {
                 claimButton.disabled = true;
                 claimButton.classList.remove('enabled');
-                status.textContent = 'Conecte sua carteira para reclamar tokens.';
+                status.textContent = getCSSVariable('--status-text');
                 return;
             }
 
@@ -203,10 +401,14 @@
                 claimButton.disabled = true;
                 claimButton.classList.remove('enabled');
                 status.textContent = `Aguarde ${hours}h ${minutes}m para um novo claim.`;
+            } else if (tasksCompleted < 3) { // Agora são 3 tarefas (sem "Conecte sua carteira" como tarefa)
+                claimButton.disabled = true;
+                claimButton.classList.remove('enabled');
+                status.textContent = `Complete todas as 3 tarefas para reclamar tokens.`;
             } else {
                 claimButton.disabled = false;
                 claimButton.classList.add('enabled');
-                status.textContent = 'Clique em "Reclamar Tokens" para receber 0.05 MON.';
+                status.textContent = getCSSVariable('--claim-text');
             }
 
             const balance = await contract.getBalance();
@@ -214,8 +416,8 @@
         }
 
         claimButton.addEventListener('click', async () => {
-            if (!walletConnected) {
-                alert('Conecte sua carteira primeiro.');
+            if (!walletConnected || tasksCompleted < 3) {
+                alert('Conecte sua carteira e complete todas as tarefas primeiro.');
                 return;
             }
 
@@ -227,6 +429,13 @@
                 const tx = await contract.claim();
                 await tx.wait();
                 alert('Tokens MON reclamados com sucesso! 0.05 MON enviados.');
+                tasksCompleted = 0; // Resetar tarefas após claim
+                taskButtons.forEach(btn => {
+                    if (btn.getAttribute('data-task')) {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    }
+                });
                 checkClaimStatus();
             } catch (error) {
                 alert('Erro ao reclamar tokens: ' + error.message);
@@ -237,7 +446,7 @@
         window.addEventListener('load', checkClaimStatus);
         setInterval(checkClaimStatus, 30000); // Verifica a cada 30 segundos
 
-        // Animação simples do canvas (fundo semelhante ao gerenciador de airdrops)
+        // Animação simples do canvas (fundo semelhante ao site da Monad)
         const canvas = document.querySelector('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -253,11 +462,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
             ctx.arc(canvas.width * 0.25, canvas.height * 0.25, 100, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 98, 0, 0.2)'; // Cor primária translúcida
+            ctx.fillStyle = 'rgba(0, 122, 255, 0.2)'; // Azul primário translúcido
             ctx.fill();
             ctx.beginPath();
             ctx.arc(canvas.width * 0.75, canvas.height * 0.75, 150, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0, 212, 181, 0.1)'; // Cor secundária translúcida
+            ctx.fillStyle = 'rgba(0, 212, 255, 0.1)'; // Ciano translúcido
             ctx.fill();
             requestAnimationFrame(animate);
         }
