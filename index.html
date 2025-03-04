@@ -11,6 +11,7 @@
             --background-end: #0F1419;
             --primary-color: #007AFF;
             --secondary-color: #00D4FF;
+            --accent-color: #FF6F00;
             --text-color: #FFFFFF;
             --box-background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.07));
             --box-border: rgba(255, 255, 255, 0.1);
@@ -26,6 +27,8 @@
             color: var(--text-color);
             min-height: 100vh;
             text-align: center;
+            overflow-x: hidden;
+            position: relative;
         }
         .main-content {
             min-height: 100vh;
@@ -34,7 +37,10 @@
             justify-content: center;
             align-items: center;
             padding: 0 20px;
+            position: relative;
+            z-index: 1;
         }
+        canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
         .wallet-info {
             display: none;
             width: 100%;
@@ -56,12 +62,15 @@
             border-radius: 0.7rem;
             border: 1px solid var(--box-border);
             cursor: pointer;
+            transition: all 0.4s ease-in-out;
         }
+        .wallet-info button:hover { background: var(--button-hover); }
         .faucet-container {
             width: 100%;
             max-width: 24rem;
             padding: 1.5rem;
             background: var(--box-background);
+            backdrop-filter: blur(20px);
             border-radius: 1rem;
             border: 1px solid var(--box-border);
             box-shadow: 0 8px 16px var(--shadow-color);
@@ -93,19 +102,37 @@
             border-radius: 0.75rem;
             color: var(--text-color);
             border: 1px solid var(--box-border);
-            cursor: pointer;
+            box-shadow: 0 3px 10px var(--shadow-color);
             font-weight: bold;
+            transition: all 0.4s ease-in-out;
+            cursor: pointer;
         }
         .task-button:hover, .claim-button:hover {
-            background: rgba(255, 255, 255, 0.08);
             transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.08);
         }
         .claim-button {
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             opacity: var(--disabled-opacity);
             cursor: not-allowed;
+            justify-content: center;
+            position: relative;
         }
         .claim-button.enabled { opacity: 1; cursor: pointer; }
+        .claim-button .spinner {
+            display: none;
+            position: absolute;
+            left: 10px;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--text-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .claim-button.loading .spinner { display: inline-block; }
+        .claim-button.loading span { margin-left: 25px; }
         .status { font-size: 0.9rem; margin-top: 1rem; opacity: 0.8; }
         .modal {
             display: none;
@@ -132,7 +159,9 @@
             padding: 0.5rem 1rem;
             border-radius: 0.7rem;
             cursor: pointer;
+            transition: all 0.4s ease-in-out;
         }
+        .modal-button:hover { background: var(--button-hover); }
         #modal-overlay {
             display: none;
             position: fixed;
@@ -142,11 +171,31 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
             z-index: 20;
+            backdrop-filter: blur(5px);
+        }
+        .decorative-blur {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(2.5rem);
+            pointer-events: none;
+            animation: pulse 4s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.2; } 50% { opacity: 0.4; } 100% { opacity: 0.2; }
+        }
+        .blur-1 { top: 25%; left: 25%; width: 14rem; height: 14rem; background: rgba(0, 122, 255, 0.2); }
+        .blur-2 { bottom: 33%; right: 33%; width: 20rem; height: 20rem; background: rgba(0, 212, 255, 0.1); }
+        @media (max-width: 768px) {
+            .faucet-container { max-width: 90%; padding: 1rem; }
+            .faucet-title { font-size: 2rem; }
+            .task-button, .claim-button { padding: 0.8rem; }
+            .wallet-info { max-width: 90%; }
         }
     </style>
 </head>
 <body>
     <div class="main-content">
+        <canvas></canvas>
         <div class="wallet-info" id="walletInfo">
             <span id="walletAddress"></span>
             <button id="disconnectWallet">Disconnect</button>
@@ -182,9 +231,14 @@
                 <div><span>Claim Amount</span><span id="claimAmount">0.00 MON</span></div>
                 <div><span>Network</span><span>Monad Testnet</span></div>
             </div>
-            <button class="claim-button" id="claimButton" disabled>Claim Tokens</button>
-            <div class="status" id="status">Connect your wallet to start.</div>
+            <button class="claim-button" id="claimButton" disabled>
+                <div class="spinner"></div>
+                <span>Claim Tokens</span>
+            </button>
+            <div class="status" id="status"></div>
         </div>
+        <div class="decorative-blur blur-1"></div>
+        <div class="decorative-blur blur-2"></div>
     </div>
     <div id="modal-overlay"></div>
     <div id="confirmation-modal" class="modal">
@@ -194,15 +248,11 @@
             <button class="modal-button" id="confirm-no">No</button>
         </div>
     </div>
-    <!-- Usando CDN confiável para ethers.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script>
-        // Verificar se ethers carregou
         if (typeof ethers === 'undefined') {
-            document.getElementById('status').textContent = 'Error: ethers.js failed to load. Please check your internet or refresh the page.';
+            document.getElementById('status').textContent = 'Error: ethers.js failed to load. Please refresh the page.';
             throw new Error('ethers.js not loaded');
-        } else {
-            console.log('ethers.js loaded successfully');
         }
 
         const CONTRACT_ADDRESS = '0x1EB75153aF33AD33841565D2E11478787D863123';
@@ -224,6 +274,7 @@
         let tasksCompleted = { connectWallet: false, followX: false, likePost: false };
         const taskButtons = document.querySelectorAll('.task-button');
         const claimButton = document.getElementById('claimButton');
+        const claimButtonText = claimButton.querySelector('span');
         const status = document.getElementById('status');
         const connectWalletButton = document.getElementById('connectWalletButton');
         const modal = document.getElementById('confirmation-modal');
@@ -294,6 +345,7 @@
             updateTaskButtons();
             claimButton.disabled = true;
             claimButton.classList.remove('enabled');
+            claimButtonText.textContent = 'Claim Tokens';
             status.textContent = 'Connect your wallet to start.';
             available.textContent = '0.00 MON';
             claimAmount.textContent = '0.00 MON';
@@ -347,6 +399,7 @@
             if (!walletConnected) {
                 claimButton.disabled = true;
                 claimButton.classList.remove('enabled');
+                claimButtonText.textContent = 'Claim Tokens';
                 status.textContent = 'Connect your wallet to start.';
                 return;
             }
@@ -360,28 +413,47 @@
                 const now = Math.floor(Date.now() / 1000);
 
                 if (now < lastClaimTime.toNumber() + cooldown.toNumber()) {
-                    const remaining = lastClaimTime.toNumber() + cooldown.toNumber() - now;
-                    const hours = Math.floor(remaining / 3600);
-                    const minutes = Math.floor((remaining % 3600) / 60);
-                    status.textContent = `Wait ${hours}h ${minutes}m for next claim.`;
+                    startCooldownCountdown(lastClaimTime, cooldown);
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
+                    status.textContent = 'Tasks completed. Waiting for cooldown.';
                 } else if (!tasksCompleted.followX || !tasksCompleted.likePost) {
-                    status.textContent = 'Complete all tasks to claim tokens.';
+                    claimButtonText.textContent = 'Claim Tokens';
                     claimButton.disabled = true;
                     claimButton.classList.remove('enabled');
+                    status.textContent = 'Complete all tasks to claim tokens.';
                 } else {
                     const claimAmt = await contract.CLAIM_AMOUNT();
-                    status.textContent = `Ready! Click to claim ${ethers.utils.formatEther(claimAmt)} MON.`;
+                    claimButtonText.textContent = `Claim ${ethers.utils.formatEther(claimAmt)} MON`;
                     claimButton.disabled = false;
                     claimButton.classList.add('enabled');
+                    status.textContent = 'Ready to claim!';
                 }
             } catch (error) {
                 console.error('Error checking claim status:', error);
-                status.textContent = 'Error verifying contract. Try again.';
+                claimButtonText.textContent = 'Claim Tokens';
                 claimButton.disabled = true;
                 claimButton.classList.remove('enabled');
+                status.textContent = 'Error verifying contract. Try again.';
             }
+        }
+
+        function startCooldownCountdown(lastClaimTime, cooldown) {
+            const endTime = lastClaimTime.toNumber() + cooldown.toNumber();
+            const updateTimer = () => {
+                const now = Math.floor(Date.now() / 1000);
+                const remaining = endTime - now;
+                if (remaining > 0) {
+                    const hours = Math.floor(remaining / 3600);
+                    const minutes = Math.floor((remaining % 3600) / 60);
+                    const seconds = remaining % 60;
+                    claimButtonText.textContent = `Next claim in ${hours}h ${minutes}m ${seconds}s`;
+                    setTimeout(updateTimer, 1000);
+                } else {
+                    checkClaimStatus();
+                }
+            };
+            updateTimer();
         }
 
         async function claimTokens() {
@@ -389,6 +461,9 @@
                 alert('Connect wallet and complete all tasks first.');
                 return;
             }
+            claimButton.classList.add('loading');
+            claimButtonText.textContent = 'Claiming...';
+            claimButton.disabled = true;
             try {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
@@ -404,11 +479,61 @@
             } catch (error) {
                 console.error('Claim error:', error);
                 alert('Failed to claim tokens: ' + (error.message || 'Unknown error'));
+                claimButtonText.textContent = 'Claim Tokens';
+                status.textContent = 'Error during claim. Try again.';
+            } finally {
+                claimButton.classList.remove('loading');
             }
         }
 
         claimButton.addEventListener('click', claimTokens);
         window.addEventListener('load', checkClaimStatus);
+
+        // Animação de partículas no canvas
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = Math.random() * 0.3 - 0.15;
+                this.speedY = Math.random() * 0.3 - 0.15;
+                this.color = `rgba(${Math.random() * 100 + 155}, ${Math.random() * 100 + 155}, 255, 0.1)`;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+            }
+        }
+
+        const particles = [];
+        for (let i = 0; i < 30; i++) particles.push(new Particle());
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+        animate();
     </script>
 </body>
 </html>
