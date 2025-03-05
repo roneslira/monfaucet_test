@@ -213,6 +213,7 @@
         }
         footer a:hover { color: var(--secondary-color); }
         .donate-container {
+            display: none; /* Desabilitado temporariamente */
             width: 100%;
             max-width: 24rem;
             margin-top: 1rem;
@@ -256,8 +257,7 @@
         .ad-right { right: calc(50% - 650px); top: 50%; transform: translateY(-50%); }
         @media (max-width: 1400px) { .ad-container { display: none; } }
         @media (max-width: 768px) {
-            .faucet-container, .donate-container { max-width: 90%; padding: 1.5rem; }
-            .faucet-container { min-height: 400px; }
+            .faucet-container { max-width: 90%; padding: 1.5rem; min-height: 400px; }
             .faucet-title { font-size: 2rem; }
             .task-button, .claim-button { padding: 0.8rem; }
             .wallet-info { max-width: 90%; top: 10px; }
@@ -311,7 +311,7 @@
             <div class="status" id="status"></div>
         </div>
         <div class="donate-container">
-            Help the nads nation, donate MON to the faucet: 
+            Help the Nads, donate to the faucet: 
             <button id="copyContractBtn">Copy Contract Address</button>
         </div>
         <div class="ad-container ad-right">Ad Space (300x600)</div>
@@ -351,11 +351,11 @@
             "likePost": "https://x.com/_roneslira/status/123456789"
         };
         const MONAD_TESTNET = {
-            chainId: '0x27AF',
+            chainId: '0x27AF', // 10143 em hexadecimal
             chainName: 'Monad Testnet',
-            rpcUrls: ['https://monad-testnet-1.calderachain.xyz/http'],
+            rpcUrls: ['https://testnet-rpc.monad.xyz/'],
             nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
-            blockExplorerUrls: ['https://monad-explorer.testnet.caldera.xyz']
+            blockExplorerUrls: ['https://testnet.monadexplorer.com/']
         };
 
         let walletConnected = localStorage.getItem('walletConnected') === 'true';
@@ -402,7 +402,7 @@
                             params: [{ chainId: '0x27AF' }],
                         });
                     } catch (switchError) {
-                        if (switchError.code === 4902) {
+                        if (switchError.code === 4902 || switchError.code === -32603) { // Rede não encontrada ou erro genérico
                             await window.ethereum.request({
                                 method: 'wallet_addEthereumChain',
                                 params: [MONAD_TESTNET],
@@ -412,7 +412,7 @@
                                 params: [{ chainId: '0x27AF' }],
                             });
                         } else {
-                            throw new Error('Failed to switch to Monad Testnet. Please switch manually.');
+                            throw new Error('Failed to switch to Monad Testnet. Please switch manually to Monad Testnet (Chain ID: 10143).');
                         }
                     }
                 }
@@ -483,16 +483,16 @@
                     new ethers.providers.JsonRpcProvider(MONAD_TESTNET.rpcUrls[0]);
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
                 const balance = await contract.getBalance();
-                const cachedClaim = ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
-                const cachedCooldown = (await contract.COOLDOWN_PERIOD()).toString();
-                localStorage.setItem('claimAmount', '0.01'); // Fixado em 0.01 para testes
-                localStorage.setItem('cooldownPeriod', cachedCooldown);
+                const claimAmt = ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                const cooldown = (await contract.COOLDOWN_PERIOD()).toString();
+                localStorage.setItem('claimAmount', claimAmt);
+                localStorage.setItem('cooldownPeriod', cooldown);
                 available.textContent = ethers.utils.formatEther(balance) + ' MON';
-                claimAmount.textContent = '0.01 MON';
+                claimAmount.textContent = claimAmt + ' MON';
             } catch (error) {
                 console.error('Error fetching contract info:', error);
                 available.textContent = 'Error';
-                claimAmount.textContent = '0.01 MON';
+                claimAmount.textContent = '0.05 MON';
             }
         }
 
@@ -510,7 +510,7 @@
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
                 const address = await signer.getAddress();
                 const lastClaimTime = await contract.lastClaim(address);
-                const cooldown = parseInt(await contract.COOLDOWN_PERIOD()); // Usar valor real do contrato
+                const cooldown = parseInt(await contract.COOLDOWN_PERIOD()); // 24 horas (86400 segundos)
                 const now = Math.floor(Date.now() / 1000);
 
                 if (lastClaimTime.toNumber() > 0) {
@@ -528,7 +528,8 @@
                     claimButton.classList.remove('enabled');
                     status.textContent = 'Complete all tasks to claim tokens.';
                 } else {
-                    claimButtonText.textContent = 'Claim 0.01 MON';
+                    const claimAmt = ethers.utils.formatEther(await contract.CLAIM_AMOUNT());
+                    claimButtonText.textContent = `Claim ${claimAmt} MON`;
                     claimButton.disabled = false;
                     claimButton.classList.add('enabled');
                     status.textContent = 'Ready to claim!';
@@ -572,7 +573,7 @@
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
-                const tx = await contract.claim({ gasLimit: 100000 }); // Gas limit manual para evitar UNPREDICTABLE_GAS_LIMIT
+                const tx = await contract.claim({ gasLimit: 100000 });
                 await tx.wait();
                 alert('Tokens claimed successfully!');
                 tasksCompleted.followX = false;
